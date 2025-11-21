@@ -1,0 +1,639 @@
+import tkinter as tk
+from tkinter import messagebox, simpledialog, ttk
+import json
+import os
+import random
+import shutil
+from tkinter import filedialog
+
+SAVE_FILE = r"C:\Users\chris\OneDrive\Karteikarten App\card_app_data.json"
+
+def random_pastel_color():
+    r = random.randint(200, 255)
+    g = random.randint(200, 255)
+    b = random.randint(200, 255)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+def rgb_to_hex(r, g, b):
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+def interpolate_color(start_color, end_color, factor):
+    r1, g1, b1 = hex_to_rgb(start_color)
+    r2, g2, b2 = hex_to_rgb(end_color)
+
+    r = int(r1 + (r2 - r1) * factor)
+    g = int(g1 + (g2 - g1) * factor)
+    b = int(b1 + (b2 - b1) * factor)
+
+    return rgb_to_hex(r, g, b)
+
+def generate_columns(num_columns):
+    # Erste Spalte = 5.0, letzte Spalte = 2.0
+    # Dazwischen linear interpolieren, auf eine Nachkommastelle runden.
+    start = 5.0
+    end = 2.0
+    diff = start - end
+    steps = num_columns - 1 if num_columns > 1 else 1
+    step = diff / steps
+
+    columns = []
+    for i in range(num_columns):
+        val = start - i * step
+        columns.append(f"{val:.1f}")
+    return columns
+
+class CardApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Klausurmaster2D")
+        self.root.geometry("1280x720")
+        self.root.minsize(800, 600)
+
+        self.root.iconbitmap("favicon.ico")
+
+        self.data = {
+            "tables": {},
+            "current_table": None
+        }
+
+        self.delete_mode = False
+        self.moving_card = None  # (row_name, old_col_name, card_text)
+
+        self.selected_card = None
+        self.selected_card_position = None
+
+        # Haupt-Container
+        self.main_frame = ttk.Frame(self.root, padding=10)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Scrollbarer Bereich für die Tabelle
+        self.canvas = tk.Canvas(self.main_frame)
+        self.canvas.grid(row=0, column=0, sticky=tk.NSEW)
+
+        # Vertikale und horizontale Scrollbars hinzufügen
+        self.v_scrollbar = ttk.Scrollbar(self.main_frame, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.v_scrollbar.grid(row=0, column=1, sticky=tk.NS)
+
+        self.h_scrollbar = ttk.Scrollbar(self.main_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        self.h_scrollbar.grid(row=1, column=0, sticky=tk.EW)
+
+        self.canvas.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+
+        # Frame innerhalb des Canvas erstellen
+        self.table = ttk.Frame(self.canvas)
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.table, anchor="nw")
+
+        # Konfiguration des Grid-Layouts
+        self.main_frame.rowconfigure(0, weight=1)
+        self.main_frame.columnconfigure(0, weight=1)
+
+        # Bind das Konfigurationsereignis, um die Scrollregion zu aktualisieren
+        self.table.bind("<Configure>", self.on_frame_configure)
+
+        # Steuerungsbereich
+        self.controls = ttk.Frame(self.main_frame, padding=10)
+        self.controls.grid(row=2, column=0, columnspan=2, sticky=tk.EW)
+
+        self.add_row_button = ttk.Button(self.controls, text="(Strg+N) Zeile hinzufügen", command=self.add_row)
+        self.add_row_button.pack(side=tk.LEFT, padx=5)
+        self.delete_row_button = ttk.Button(self.controls, text="Zeile löschen", command=self.delete_row)
+        self.delete_row_button.pack(side=tk.LEFT, padx=5)
+
+        self.save_button = ttk.Button(self.controls, text="Speichern", command=self.save_data)
+        self.save_button.pack(side=tk.LEFT, padx=5)
+
+        self.load_button = ttk.Button(self.controls, text="Laden", command=self.load_data_or_create_new_table)
+        self.load_button.pack(side=tk.LEFT, padx=5)
+
+        # Optionen-Button
+        self.options_button = ttk.Button(self.root, text="Optionen", command=self.open_options_dialog)
+        self.options_button.place(x=10, y=10)
+
+        self.shortcut_frame = tk.Frame(self.controls)
+        self.shortcut_frame.pack(side=tk.LEFT, padx=20)
+
+        ttk.Button(self.shortcut_frame, text="(1–9) Karte hinzufügen", command=self.add_card_via_button).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.shortcut_frame, text="(Strg+W) Löschmodus", command=self.toggle_delete_mode).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.shortcut_frame, text="(ESC) Aktion abbrechen", command=self.cancel_operations).pack(side=tk.LEFT, padx=5)
+
+        # Weitere Konfiguration für das Canvas, um Scrollbars zu aktivieren
+        self.canvas.bind('<Configure>', self.on_canvas_configure)
+
+        # Lade Daten oder erstelle bei Bedarf eine neue Tabelle
+        self.load_data_or_create_new_table()
+        self.bind_shortcuts()
+
+    def on_frame_configure(self, event):
+        """Setzt die Scrollregion des Canvas, wenn das Frame konfiguriert wird."""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_canvas_configure(self, event):
+        """Passt die Breite des inneren Frames an die des Canvas an."""
+        canvas_width = event.width
+        self.canvas.itemconfig(self.canvas_window, width=canvas_width)
+
+    def load_data_or_create_new_table(self):
+        self.load_data()
+
+        if "tables" not in self.data:
+            self.data["tables"] = {}
+        if "current_table" not in self.data:
+            self.data["current_table"] = None
+
+        if not self.data["tables"]:
+            self.new_table()
+
+        if self.data["current_table"] is None:
+            if self.data["tables"]:
+                first_table = list(self.data["tables"].keys())[0]
+                self.data["current_table"] = first_table
+
+        self.update_table()
+
+    def create_table_header(self):
+        for widget in self.table.winfo_children():
+            widget.destroy()
+
+        columns = self.get_current_columns()
+        for col_idx, col_name in enumerate(columns, start=1):
+            label = ttk.Label(
+                self.table, text=col_name, anchor="center", padding=5, style="TableHeader.TLabel"
+            )
+            label.grid(row=0, column=col_idx, sticky=tk.NSEW, padx=2, pady=2)
+
+        self.table.columnconfigure(0, weight=1)
+        for col in range(1, len(columns) + 1):
+            self.table.columnconfigure(col, weight=1)
+
+    def get_current_table_data(self):
+        if self.data["current_table"] is None:
+            return None
+        self.root.title(f"Klausurmaster2D - {self.data['current_table']}")
+        return self.data["tables"].get(self.data["current_table"], None)
+
+    def get_current_columns(self):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            return []
+        return table_data["columns"]
+
+    def add_row(self):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            messagebox.showerror("Fehler", "Keine Tabelle geladen!")
+            return
+
+        rows = table_data["rows"]
+        columns = table_data["columns"]
+        cards = table_data["cards"]
+        row_colors = table_data["row_colors"]
+
+        if len(rows) >= 9:
+            messagebox.showerror("Fehler", "Maximal 9 Zeilen sind erlaubt!")
+            return
+
+        row_name = simpledialog.askstring("Neue Zeile", "Gib den Namen des Fachs ein:")
+        if row_name:
+            rows.append(row_name)
+            cards[row_name] = {}
+            for col in columns:
+                cards[row_name][col] = []
+            row_colors[row_name] = random_pastel_color()
+            self.update_table()
+            self.save_data()
+
+    def delete_row(self):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            messagebox.showerror("Fehler", "Keine Tabelle geladen!")
+            return
+
+        rows = table_data["rows"]
+        cards = table_data["cards"]
+        row_colors = table_data["row_colors"]
+
+        if not rows:
+            messagebox.showerror("Fehler", "Keine Zeile vorhanden, die gelöscht werden könnte.")
+            return
+
+        row_name = simpledialog.askstring("Zeile löschen", "Name der zu löschenden Zeile eingeben:")
+        if row_name and row_name in rows:
+            idx = rows.index(row_name)
+            rows.pop(idx)
+            cards.pop(row_name, None)
+            row_colors.pop(row_name, None)
+            self.update_table()
+            self.save_data()
+        else:
+            messagebox.showerror("Fehler", "Zeile nicht gefunden.")
+
+    def calculate_ratio(self, row_name):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            return 0.0
+        cards = table_data["cards"]
+        columns = table_data["columns"]
+
+        total_cards = sum(len(cards[row_name][col]) for col in columns)
+        if total_cards == 0:
+            return 0.0
+
+        # Normierung (5.0 = Start, 2.0 = Ende, Bereich = 3.0)
+        # norm = (5.0 - col_val) / 3.0 für jede Karte
+        sum_factors = 0.0
+        for col in columns:
+            col_val = float(col)
+            count = len(cards[row_name][col])
+            norm = (5.0 - col_val) / 3.0
+            sum_factors += count * norm
+
+        ratio = sum_factors / total_cards
+        return ratio
+
+    def update_table(self):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            for widget in self.table.winfo_children():
+                widget.destroy()
+            return
+
+        rows = table_data["rows"]
+        cards = table_data["cards"]
+        row_colors = table_data["row_colors"]
+        columns = table_data["columns"]
+
+        self.create_table_header()
+
+        gradient_start = "#e0f0ff"
+        gradient_end = "#4A90E2"
+
+        # Entferne alle Widgets außer den Header
+        for widget in self.table.winfo_children()[len(columns):]:
+            widget.destroy()
+
+        for row_idx, row_name in enumerate(rows):
+            ratio = self.calculate_ratio(row_name)
+
+            if row_idx == 0:
+                num_columns = len(columns) + 1
+                for col_idx in range(num_columns):
+                    factor = col_idx / (num_columns - 1) if num_columns > 1 else 0
+                    cell_color = interpolate_color(gradient_start, gradient_end, factor)
+
+                    if col_idx == 0:
+                        label_color = interpolate_color("#ffffff", cell_color, ratio)
+                        row_frame = tk.Frame(self.table, bg=label_color)
+                        row_frame.grid(row=row_idx + 1, column=0, sticky=tk.NSEW, padx=2, pady=2)
+                        row_label = tk.Label(row_frame, text=row_name, bg=label_color, fg="black")
+                        row_label.pack(fill=tk.BOTH, expand=True)
+                    else:
+                        frame = tk.Frame(
+                            self.table, bg=cell_color,
+                            padx=5, pady=5,
+                            highlightthickness=1, highlightbackground='#888888'
+                        )
+                        frame.grid(row=row_idx + 1, column=col_idx, sticky=tk.NSEW, padx=5, pady=5)
+                        frame._row_name = row_name
+                        frame._col_name = columns[col_idx - 1]
+                        frame.bind("<ButtonPress-1>", lambda event, r=row_name, c=columns[col_idx - 1]: self.on_column_click(r, c))
+
+                        for card in cards[row_name][columns[col_idx - 1]]:
+                            if self.delete_mode:
+                                card_color = "red"
+                            else:
+                                card_color = "lightgray"
+
+                            if self.moving_card and self.moving_card[0] == row_name and self.moving_card[1] == columns[col_idx - 1] and self.moving_card[2] == card:
+                                card_color = "#aaaaaa"
+
+                            label = tk.Label(frame, text=card, bg=card_color, anchor="center", relief=tk.RAISED)
+                            label.pack(fill=tk.BOTH, expand=True, pady=2)
+                            label.bind("<ButtonPress-1>", lambda event, l=label, r=row_name, c=columns[col_idx - 1]: self.on_card_click(l, r, c))
+            else:
+                base_color = row_colors[row_name]
+                label_color = interpolate_color("#ffffff", base_color, ratio)
+
+                row_frame = tk.Frame(self.table, bg=label_color)
+                row_frame.grid(row=row_idx + 1, column=0, sticky=tk.NSEW, padx=2, pady=2)
+                row_label = tk.Label(row_frame, text=row_name, bg=label_color, fg="black")
+                row_label.pack(fill=tk.BOTH, expand=True)
+
+                for col_idx, col_name in enumerate(columns, start=1):
+                    frame = tk.Frame(
+                        self.table, bg=base_color,
+                        padx=5, pady=5,
+                        highlightthickness=1, highlightbackground='#888888'
+                    )
+                    frame.grid(row=row_idx + 1, column=col_idx, sticky=tk.NSEW, padx=5, pady=5)
+                    frame._row_name = row_name
+                    frame._col_name = col_name
+                    frame.bind("<ButtonPress-1>", lambda event, r=row_name, c=col_name: self.on_column_click(r, c))
+
+                    for card in cards[row_name][col_name]:
+                        if self.delete_mode:
+                            card_color = "red"
+                        else:
+                            card_color = "lightgray"
+
+                        if self.moving_card and self.moving_card[0] == row_name and self.moving_card[1] == col_name and self.moving_card[2] == card:
+                            card_color = "#aaaaaa"
+
+                        label = tk.Label(frame, text=card, bg=card_color, anchor="center", relief=tk.RAISED)
+                        label.pack(fill=tk.BOTH, expand=True, pady=2)
+                        label.bind("<ButtonPress-1>", lambda event, l=label, r=row_name, c=col_name: self.on_card_click(l, r, c))
+
+    def add_card_to_row(self, row_index):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            messagebox.showerror("Fehler", "Keine Tabelle geladen!")
+            return
+        rows = table_data["rows"]
+
+        idx = row_index - 1
+        if 0 <= idx < len(rows):
+            row_name = rows[idx]
+            self.add_card_to_row_by_name(row_name)
+        else:
+            messagebox.showerror("Fehler", f"Es existiert keine Zeile {row_index}.")
+
+    def add_card_to_row_by_name(self, row_name):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            messagebox.showerror("Fehler", "Keine Tabelle geladen!")
+            return
+        cards = table_data["cards"]
+        columns = table_data["columns"]
+
+        card_name = simpledialog.askstring("Karte hinzufügen", f"Gib den Namen der Karte für '{row_name}' ein:")
+        if card_name:
+            first_col = columns[0]
+            cards[row_name][first_col].append(card_name)
+            self.update_table()
+            self.save_data()
+
+    def add_card_via_button(self):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            messagebox.showerror("Fehler", "Keine Tabelle geladen!")
+            return
+        rows = table_data["rows"]
+
+        if not rows:
+            messagebox.showerror("Fehler", "Füge zuerst eine Zeile hinzu!")
+            return
+
+        popup = tk.Toplevel(self.root)
+        popup.title("Zeile auswählen")
+        tk.Label(popup, text="Wähle eine Zeile:").pack(padx=10, pady=10)
+
+        button_frame = tk.Frame(popup)
+        button_frame.pack(padx=10, pady=10)
+
+        for i, row_name in enumerate(rows, start=1):
+            btn = ttk.Button(button_frame, text=row_name, command=lambda rn=row_name: self.select_line_and_close_by_name(popup, rn))
+            btn.pack(fill=tk.X, pady=2)
+
+    def select_line_and_close_by_name(self, popup, row_name):
+        popup.destroy()
+        self.add_card_to_row_by_name(row_name)
+
+    def save_data(self):
+        with open(SAVE_FILE, "w") as f:
+            json.dump(self.data, f, indent=4)
+
+    def load_data(self):
+        try:
+            with open(SAVE_FILE, "r") as f:
+                self.data = json.load(f)
+        except FileNotFoundError:
+            self.data = {"tables": {}, "current_table": None}
+
+        if "tables" not in self.data:
+            self.data["tables"] = {}
+        if "current_table" not in self.data:
+            self.data["current_table"] = None
+
+    def open_options_dialog(self):
+        options_popup = tk.Toplevel(self.root)
+        options_popup.title("Optionen")
+
+        ttk.Button(options_popup, text="Neuen Speicherort wählen", command=lambda: self.change_save_location_wrapper(options_popup)).pack(pady=5)
+        ttk.Button(options_popup, text="Speicherstand laden", command=lambda: self.load_from_json_buttons(options_popup)).pack(pady=5)
+        ttk.Button(options_popup, text="Neue Tabelle erstellen", command=lambda: self.new_table_wrapper(options_popup)).pack(pady=5)
+        ttk.Button(options_popup, text="Tabelle löschen", command=lambda: self.delete_table_from_buttons(options_popup)).pack(pady=5)
+    
+    def delete_table_from_buttons(self, popup):
+        if not self.data["tables"]:
+            messagebox.showerror("Fehler", "Keine Tabellen vorhanden!")
+            return
+
+        delete_popup = tk.Toplevel(self.root)
+        delete_popup.title("Tabelle löschen")
+        tk.Label(delete_popup, text="Wähle eine Tabelle zum Löschen:").pack(padx=10, pady=10)
+
+        button_frame = tk.Frame(delete_popup)
+        button_frame.pack(padx=10, pady=10)
+
+        def delete_selected_table(table_name):
+            # Bestätigung hinzufügen
+            confirm = messagebox.askokcancel("Bestätigung", f"Soll die Tabelle '{table_name}' wirklich gelöscht werden?")
+            if not confirm:
+                return
+
+            self.data["tables"].pop(table_name, None)
+            # Wenn aktuelle Tabelle gelöscht wurde, neue aktuelle wählen oder neue Tabelle erstellen
+            if self.data["current_table"] == table_name:
+                if self.data["tables"]:
+                    # erste verfügbare Tabelle setzen
+                    self.data["current_table"] = list(self.data["tables"].keys())[0]
+                else:
+                    # keine Tabellen mehr vorhanden, neue Tabelle erstellen
+                    self.data["current_table"] = None
+                    self.new_table()
+
+            self.save_data()
+            self.update_table()
+            messagebox.showinfo("Erfolg", f"Tabelle '{table_name}' wurde gelöscht.")
+            delete_popup.destroy()
+            popup.destroy()
+
+        for table_name in self.data["tables"].keys():
+            btn = ttk.Button(button_frame, text=table_name, command=lambda tn=table_name: delete_selected_table(tn))
+            btn.pack(fill=tk.X, pady=2)
+
+    def new_table_wrapper(self, popup):
+        self.new_table()
+        popup.destroy()
+
+    def new_table(self):
+        table_name = simpledialog.askstring("Neue Tabelle", "Gib den Namen der neuen Tabelle ein:")
+        if not table_name:
+            return
+        if table_name in self.data["tables"]:
+            messagebox.showerror("Fehler", "Eine Tabelle mit diesem Namen existiert bereits!")
+            return
+
+        num_cols_str = simpledialog.askstring("Spaltenanzahl", "Gib die Anzahl der Spalten ein (z.B. 5):")
+        if not num_cols_str or not num_cols_str.isdigit():
+            messagebox.showerror("Fehler", "Ungültige Spaltenanzahl!")
+            return
+        num_cols = int(num_cols_str)
+        if num_cols < 2:
+            messagebox.showerror("Fehler", "Mindestens 2 Spalten erforderlich!")
+            return
+
+        columns = generate_columns(num_cols)
+
+        self.data["tables"][table_name] = {
+            "rows": [],
+            "cards": {},
+            "row_colors": {},
+            "columns": columns
+        }
+        self.data["current_table"] = table_name
+        self.root.title(f"Klausurmaster2D - {table_name}")
+        self.update_table()
+        self.save_data()
+
+    def change_save_location_wrapper(self, popup):
+        self.change_save_location()
+        popup.destroy()
+
+    def load_from_json_buttons(self, popup):
+        if not self.data["tables"]:
+            messagebox.showerror("Fehler", "Keine Tabellen vorhanden!")
+            return
+
+        load_popup = tk.Toplevel(self.root)
+        load_popup.title("Tabelle laden")
+        tk.Label(load_popup, text="Wähle eine Tabelle:").pack(padx=10, pady=10)
+
+        button_frame = tk.Frame(load_popup)
+        button_frame.pack(padx=10, pady=10)
+
+        def load_selected_table(table_name):
+            self.data["current_table"] = table_name
+            self.update_table()
+            self.save_data()
+            messagebox.showinfo("Erfolg", f"Tabelle '{table_name}' wurde geladen.")
+            load_popup.destroy()
+            popup.destroy()
+
+        for table_name in self.data["tables"].keys():
+            btn = ttk.Button(button_frame, text=table_name, command=lambda tn=table_name: load_selected_table(tn))
+            btn.pack(fill=tk.X, pady=2)
+
+    def change_save_location(self):
+        global SAVE_FILE
+        new_path = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json")],
+            title="Neuen Speicherort für die JSON-Datei wählen"
+        )
+
+        if new_path:
+            try:
+                shutil.move(SAVE_FILE, new_path)
+                SAVE_FILE = new_path
+                messagebox.showinfo("Erfolg", f"Speicherort geändert zu:\n{SAVE_FILE}")
+            except Exception as e:
+                messagebox.showerror("Fehler", f"Fehler beim Verschieben der Datei:\n{e}")
+
+    def bind_shortcuts(self):
+        self.root.bind("<Control-n>", lambda event: self.add_row())
+        self.root.bind("<Control-w>", lambda event: self.toggle_delete_mode())
+        self.root.bind("<Escape>", lambda event: self.cancel_operations())
+
+        for i in range(1, 10):
+            self.root.bind(f"<Key-{i}>", lambda event, x=i: self.add_card_to_row(x))
+
+        # Optional: Mausrad für Scrollen hinzufügen
+        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
+        self.canvas.bind_all("<Button-4>", self.on_mousewheel)  # Linux
+        self.canvas.bind_all("<Button-5>", self.on_mousewheel)  # Linux
+
+    def on_mousewheel(self, event):
+        """Scrollt das Canvas mit dem Mausrad."""
+        if event.num == 4:
+            self.canvas.yview_scroll(-1, "units")
+        elif event.num == 5:
+            self.canvas.yview_scroll(1, "units")
+        else:
+            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    def cancel_operations(self):
+        if self.delete_mode:
+            self.delete_mode = False
+            self.update_table()
+        if self.moving_card:
+            self.moving_card = None
+            self.update_table()
+
+    def toggle_delete_mode(self):
+        self.delete_mode = not self.delete_mode
+        self.update_table()
+
+    def on_column_click(self, row_name, col_name):
+        if self.moving_card:
+            table_data = self.get_current_table_data()
+            if table_data is None:
+                return
+            cards = table_data["cards"]
+            old_row, old_col, card_text = self.moving_card
+            if old_row == row_name and card_text in cards[old_row][old_col]:
+                cards[old_row][old_col].remove(card_text)
+                cards[row_name][col_name].append(card_text)
+                self.moving_card = None
+                self.update_table()
+                self.save_data()
+
+    def on_card_click(self, label, row_name, col_name):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            return
+
+        cards = table_data["cards"]
+        card_text = label.cget("text")
+        if self.delete_mode:
+            if card_text in cards[row_name][col_name]:
+                cards[row_name][col_name].remove(card_text)
+                self.update_table()
+                self.save_data()
+        else:
+            if self.moving_card is None:
+                self.moving_card = (row_name, col_name, card_text)
+                self.update_table()
+            else:
+                old_row, old_col, moving_text = self.moving_card
+                if old_row == row_name and moving_text in cards[old_row][old_col]:
+                    cards[old_row][old_col].remove(moving_text)
+                    cards[row_name][col_name].append(moving_text)
+                    self.moving_card = None
+                    self.update_table()
+                    self.save_data()
+    
+    def on_canvas_configure(self, event):
+        """Passt die Breite des inneren Frames an die des Canvas an."""
+        canvas_width = event.width
+        self.canvas.itemconfig(self.canvas_window, width=canvas_width)
+
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    style = ttk.Style()
+    style.configure("TableHeader.TLabel", font=("Arial", 12, "bold"), background="#4A90E2", foreground="white")
+    app = CardApp(root)
+    # Statt hier direkt aufzurufen:
+    # app.load_data_or_create_new_table()
+
+    # Verwende nach dem Start des Eventloop einen after-Aufruf:
+    root.after(100, app.load_data_or_create_new_table)
+    root.mainloop()
+
+
+

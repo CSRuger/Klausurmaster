@@ -1,0 +1,665 @@
+{
+    "rows": [
+        "Mathe",
+        "Systemprogrammierung",
+        "BFS",
+        "PFP"
+    ],
+    "cards": {
+        "Mathe": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        },
+        "Systemprogrammierung": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        },
+        "BFS": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        },
+        "PFP": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        }
+    },
+    "row_colors": {
+        "Mathe": "#f5cbcc",
+        "Systemprogrammierung": "#d1fad8",
+        "BFS": "#c9fbea",
+        "PFP": "#fdffd0"
+    },
+    "tables": {
+        "Klausur bestehen": {
+            "rows": [
+                "Mathe",
+                "Systemprogrammierung",
+                "BFS",
+                "PFP"
+            ],
+            "cards": {
+                "Mathe": {
+                    "5.0": [
+                        {
+                            "front": "Algebra",
+                            "back": ""
+                        },
+                        {
+                            "front": "Kurvenintegrale",
+                            "back": ""
+                        },
+                        {
+                            "front": "lineares Programm, Simplex Algorithmus",
+                            "back": ""
+                        },
+                        {
+                            "front": "Differentialgleichungen nicht-linear",
+                            "back": ""
+                        },
+                        {
+                            "front": "konvexit\u00e4t",
+                            "back": ""
+                        },
+                        {
+                            "front": "Fundamentalsystem Differentialgleichung",
+                            "back": ""
+                        },
+                        {
+                            "front": "station\u00e4re Punkte",
+                            "back": ""
+                        },
+                        {
+                            "front": "Hesse-Matrix",
+                            "back": ""
+                        },
+                        {
+                            "front": "Differentialgleichungen linear",
+                            "back": ""
+                        },
+                        {
+                            "front": "kritische Stelle bestimmen",
+                            "back": ""
+                        }
+                    ],
+                    "4.2": [
+                        {
+                            "front": "Fixpunktiteration",
+                            "back": "asdfasdf"
+                        },
+                        {
+                            "front": "Maximum und Minimum unter Nebenbedingungen",
+                            "back": ""
+                        }
+                    ],
+                    "3.5": [],
+                    "2.8": [],
+                    "2.0": []
+                },
+                "Systemprogrammierung": {
+                    "5.0": [
+                        {
+                            "front": "Code - Auf eingehende Verbindung warten",
+                            "back": ""
+                        },
+                        {
+                            "front": "Code - Signalhandler",
+                            "back": ""
+                        },
+                        {
+                            "front": "Code - Verbindungen annehmen",
+                            "back": ""
+                        },
+                        {
+                            "front": "Code - Sockets ",
+                            "back": ""
+                        },
+                        {
+                            "front": "Code - Verbindungen lesen",
+                            "back": ""
+                        },
+                        {
+                            "front": "Karteikarten Anki",
+                            "back": ""
+                        },
+                        {
+                            "front": "Code - Threads starten",
+                            "back": ""
+                        },
+                        {
+                            "front": "Semaphore",
+                            "back": ""
+                        },
+                        {
+                            "front": "Code - Threads erstellen und synchronisieren",
+                            "back": ""
+                        },
+                        {
+                            "front": "Speicherverwaltung und Paging",
+                            "back": ""
+                        },
+                        {
+                            "front": "Ankreuzfragen",
+                            "back": ""
+                        },
+                        {
+                            "front": "Koordinierung",
+                            "back": ""
+                        }
+                    ],
+                    "4.2": [
+                        {
+                            "front": "Prozesszust\u00e4nde",
+                            "back": "Ankikarten lernen"
+                        }
+                    ],
+                    "3.5": [
+                        {
+                            "front": "Freispeicherverwaltung",
+                            "back": ""
+                        },
+                        {
+                            "front": "Dateisysteme",
+                            "back": "Aufgabe 3: file:///A:/Backup%20Laptop/Desktop/35ECTS-Get%20Fucked-Semester/Systemprogrammierung/Altklausuren/2017s-SP-Klausur-www.pdf"
+                        },
+                        {
+                            "front": "Adressr\u00e4ume",
+                            "back": ""
+                        },
+                        {
+                            "front": "Scheduling",
+                            "back": "Ankikarten lernen"
+                        }
+                    ],
+                    "2.8": [],
+                    "2.0": []
+                },
+                "BFS": {
+                    "5.0": [
+                        {
+                            "front": "Reduktion",
+                            "back": ""
+                        },
+                        {
+                            "front": "Pumping-Lemma",
+                            "back": ""
+                        },
+                        {
+                            "front": "Initiales Halteproble Definition",
+                            "back": ""
+                        },
+                        {
+                            "front": "Regul\u00e4re Pump-Eigenschaft",
+                            "back": ""
+                        },
+                        {
+                            "front": "Automaten transformieren: nichtdeterministischen in determinisitischen Wandeln",
+                            "back": ""
+                        },
+                        {
+                            "front": "Begriff: Sprache",
+                            "back": ""
+                        },
+                        {
+                            "front": "Wissensfragen",
+                            "back": ""
+                        },
+                        {
+                            "front": "Kotexfreie Sprachen",
+                            "back": ""
+                        },
+                        {
+                            "front": "Begriff: Grammatik",
+                            "back": ""
+                        },
+                        {
+                            "front": "cyk-algorithmus",
+                            "back": ""
+                        }
+                    ],
+                    "4.2": [],
+                    "3.5": [],
+                    "2.8": [],
+                    "2.0": []
+                },
+                "PFP": {
+                    "5.0": [
+                        {
+                            "front": "Speedup ",
+                            "back": ""
+                        },
+                        {
+                            "front": "volatile Variablen ",
+                            "back": ""
+                        },
+                        {
+                            "front": "Petri-Netze",
+                            "back": ""
+                        },
+                        {
+                            "front": "Petri-Netz: Transitionsinvar. finden",
+                            "back": ""
+                        },
+                        {
+                            "front": "Petri-Netz: Stelleninvar. finden",
+                            "back": ""
+                        },
+                        {
+                            "front": "Altklausur 24 l\u00f6sen",
+                            "back": ""
+                        },
+                        {
+                            "front": "Scala Aufgabe Altklausur 24",
+                            "back": ""
+                        },
+                        {
+                            "front": "atomares lesen Java",
+                            "back": ""
+                        },
+                        {
+                            "front": "lemma von Brent",
+                            "back": ""
+                        },
+                        {
+                            "front": "Altklausur 23 Java",
+                            "back": ""
+                        },
+                        {
+                            "front": "Scala Aufgabe 23",
+                            "back": ""
+                        },
+                        {
+                            "front": "Zeigerverdopplung",
+                            "back": ""
+                        },
+                        {
+                            "front": "Fl\u00fcchten einer Referenz",
+                            "back": ""
+                        },
+                        {
+                            "front": "Gau\u00df-Filter",
+                            "back": ""
+                        },
+                        {
+                            "front": "Schreibtischlauf",
+                            "back": ""
+                        }
+                    ],
+                    "4.2": [
+                        {
+                            "front": "Wissensfragen",
+                            "back": ""
+                        }
+                    ],
+                    "3.5": [],
+                    "2.8": [],
+                    "2.0": []
+                }
+            },
+            "row_colors": {
+                "Mathe": "#f3ffe5",
+                "Systemprogrammierung": "#d2cee4",
+                "BFS": "#fefacf",
+                "PFP": "#e0fcc8"
+            },
+            "columns": [
+                "5.0",
+                "4.2",
+                "3.5",
+                "2.8",
+                "2.0"
+            ]
+        },
+        "Louis hat nen kleinen": {
+            "rows": [
+                "True"
+            ],
+            "cards": {
+                "True": {
+                    "5.0": [],
+                    "2.0": [
+                        {
+                            "front": "Ja",
+                            "back": ""
+                        },
+                        {
+                            "front": "Spa\u00df",
+                            "back": ""
+                        }
+                    ]
+                }
+            },
+            "row_colors": {
+                "True": "#faebca"
+            },
+            "columns": [
+                "5.0",
+                "2.0"
+            ]
+        },
+        "kek": {
+            "rows": [],
+            "cards": {},
+            "row_colors": {},
+            "columns": [
+                "5.0",
+                "2.0"
+            ]
+        },
+        "Testtabelle Yannick": {
+            "rows": [
+                "Test",
+                "neue Zeile",
+                "Bodybuilding"
+            ],
+            "cards": {
+                "Test": {
+                    "5.0": [],
+                    "3.5": [],
+                    "2.0": []
+                },
+                "neue Zeile": {
+                    "5.0": [
+                        {
+                            "front": "Neue Karte",
+                            "back": ""
+                        }
+                    ],
+                    "3.5": [],
+                    "2.0": []
+                },
+                "Bodybuilding": {
+                    "5.0": [
+                        {
+                            "front": "Beine",
+                            "back": ""
+                        }
+                    ],
+                    "3.5": [],
+                    "2.0": [
+                        {
+                            "front": "Nacken",
+                            "back": ""
+                        },
+                        {
+                            "front": "Trizeps",
+                            "back": ""
+                        },
+                        {
+                            "front": "Brust",
+                            "back": ""
+                        },
+                        {
+                            "front": "Bizeps",
+                            "back": ""
+                        }
+                    ]
+                }
+            },
+            "row_colors": {
+                "Test": "#ebd3e9",
+                "neue Zeile": "#fde9f4",
+                "Bodybuilding": "#ffd9da"
+            },
+            "columns": [
+                "5.0",
+                "3.5",
+                "2.0"
+            ]
+        },
+        "Knilch": {
+            "rows": [],
+            "cards": {},
+            "row_colors": {},
+            "columns": [
+                "5.0",
+                "2.0"
+            ]
+        },
+        "asdf": {
+            "rows": [],
+            "cards": {},
+            "row_colors": {},
+            "columns": [
+                "5.0",
+                "4.7",
+                "4.3",
+                "4.0",
+                "3.7",
+                "3.3",
+                "3.0",
+                "2.7",
+                "2.3",
+                "2.0"
+            ]
+        },
+        "1": {
+            "rows": [
+                "Fitness vom 10.12 bis zum 25.01",
+                "Habits",
+                "Ziele"
+            ],
+            "cards": {
+                "Fitness vom 10.12 bis zum 25.01": {
+                    "5.0": [],
+                    "4.2": [
+                        {
+                            "front": "Core und Schulter",
+                            "back": ""
+                        },
+                        {
+                            "front": "Absto\u00df",
+                            "back": ""
+                        }
+                    ],
+                    "3.5": [
+                        {
+                            "front": "Joggen",
+                            "back": "3,33km auf 20 min"
+                        },
+                        {
+                            "front": "Schulterstabilit\u00e4t",
+                            "back": "weeiter arbeiten, mind muscle connection\n"
+                        },
+                        {
+                            "front": "Ern\u00e4hrung",
+                            "back": ""
+                        }
+                    ],
+                    "2.8": [],
+                    "2.0": []
+                },
+                "Habits": {
+                    "5.0": [],
+                    "4.2": [
+                        {
+                            "front": "Ern\u00e4hrung",
+                            "back": "keinen rotz essen"
+                        },
+                        {
+                            "front": "Aufstehen",
+                            "back": "30min Handy\n30min Laufband\ndazwischen Fr\u00fchst\u00fcck\n"
+                        },
+                        {
+                            "front": "Bettgehen",
+                            "back": "Z\u00e4hne Putzen\n\nMit PLan f\u00fcr morgen ins Bett\n\t10min Zeit nehemen"
+                        }
+                    ],
+                    "3.5": [],
+                    "2.8": [],
+                    "2.0": []
+                },
+                "Ziele": {
+                    "5.0": [
+                        {
+                            "front": "Sex",
+                            "back": "Hinge profil"
+                        },
+                        {
+                            "front": "awareness",
+                            "back": ""
+                        },
+                        {
+                            "front": "Traumjob",
+                            "back": "Coole Firmen als Informatiker - GPT"
+                        },
+                        {
+                            "front": "Lea (Prag!) anfassen",
+                            "back": "weiter auf Whatsapp schreiben\n\nintimer werden."
+                        },
+                        {
+                            "front": "Alle Klausuren bestehen",
+                            "back": "Habit aufbauen\n\n"
+                        }
+                    ],
+                    "4.2": [
+                        {
+                            "front": "Geburtstagsfeier",
+                            "back": "Freunde Runterschreiben\n\n"
+                        },
+                        {
+                            "front": "SysProg Klausur bestehen",
+                            "back": ""
+                        },
+                        {
+                            "front": "PFP Klausu bestehen",
+                            "back": ""
+                        },
+                        {
+                            "front": "Regeln f\u00fcr Handynutzung",
+                            "back": "30 Minuten nach dem Aufstehen\n\nfester Ort f\u00fcr mein Handy\n\nHandy auf Laut\n\nunn\u00f6tige Chats stummschalten\n\n"
+                        },
+                        {
+                            "front": "positver Selbstdialog",
+                            "back": ""
+                        }
+                    ],
+                    "3.5": [
+                        {
+                            "front": "Altenfurt Nr1",
+                            "back": "Training durchziehen,\n\nVisualisieren in Sauna.\n\nN\u00e4chster Schritt wenn ich am 05.01 immernoch durchgezogen habee"
+                        },
+                        {
+                            "front": "Mathe Klausur bestehen",
+                            "back": ""
+                        },
+                        {
+                            "front": "BFS Klausur bestehen",
+                            "back": ""
+                        }
+                    ],
+                    "2.8": [],
+                    "2.0": [
+                        {
+                            "front": "Mama Weihnachtsgeschenk",
+                            "back": ""
+                        }
+                    ]
+                }
+            },
+            "row_colors": {
+                "Fitness vom 10.12 bis zum 25.01": "#d1e6d8",
+                "Habits": "#c8fdce",
+                "Ziele": "#f6e0e3"
+            },
+            "columns": [
+                "5.0",
+                "4.2",
+                "3.5",
+                "2.8",
+                "2.0"
+            ]
+        },
+        "Tag": {
+            "rows": [
+                "Langfristig",
+                "Mittelfristig",
+                "Kurzfristig"
+            ],
+            "cards": {
+                "Langfristig": {
+                    "5.0": [],
+                    "3.5": [],
+                    "2.0": []
+                },
+                "Mittelfristig": {
+                    "5.0": [
+                        {
+                            "front": "Laptop von Heidi holen",
+                            "back": ""
+                        }
+                    ],
+                    "3.5": [
+                        {
+                            "front": "Anmelden bei Erlangen",
+                            "back": "ab 01.01"
+                        }
+                    ],
+                    "2.0": []
+                },
+                "Kurzfristig": {
+                    "5.0": [
+                        {
+                            "front": "Anki",
+                            "back": ""
+                        },
+                        {
+                            "front": "Packet verpacken",
+                            "back": ""
+                        },
+                        {
+                            "front": "Gym",
+                            "back": "Pulldowns\nTrizeps/Bizeps\nButterfly/reverse Butterfly\nSeithaben\nNackenheben\nJoggen 3 km\n\n"
+                        }
+                    ],
+                    "3.5": [
+                        {
+                            "front": "Kopfh\u00f6rer abgeben",
+                            "back": "auf dem Weg zum Gym\n"
+                        }
+                    ],
+                    "2.0": [
+                        {
+                            "front": "Anki",
+                            "back": ""
+                        },
+                        {
+                            "front": "Fitness",
+                            "back": "R\u00fccken rollen,\n\nBattleropes,\n\nBauch,\n\nR\u00fccken,\n\nSchuss,\n\nJoggen,\n\n"
+                        },
+                        {
+                            "front": "Michelle",
+                            "back": "Gespr\u00e4che:\nSkiurlaub, Weihnachten, Bumble profil,\nDating, Leon Schindlernidrel"
+                        },
+                        {
+                            "front": "Lernplan",
+                            "back": ""
+                        }
+                    ]
+                }
+            },
+            "row_colors": {
+                "Langfristig": "#d2e6c9",
+                "Mittelfristig": "#edfde3",
+                "Kurzfristig": "#cfcdde"
+            },
+            "columns": [
+                "5.0",
+                "3.5",
+                "2.0"
+            ]
+        }
+    },
+    "current_table": "1"
+}

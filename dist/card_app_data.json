@@ -1,0 +1,44 @@
+{
+    "rows": [
+        "Mathe",
+        "Systemprogrammierung",
+        "BFS",
+        "PFP"
+    ],
+    "cards": {
+        "Mathe": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        },
+        "Systemprogrammierung": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        },
+        "BFS": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        },
+        "PFP": {
+            "Anfang": [],
+            "erste Stufe": [],
+            "zweite Stufe": [],
+            "dritte Stufe": [],
+            "2.0": []
+        }
+    },
+    "row_colors": {
+        "Mathe": "#f9faff",
+        "Systemprogrammierung": "#f4f0d6",
+        "BFS": "#ecd0d7",
+        "PFP": "#e3e4f7"
+    }
+}
