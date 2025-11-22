@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+from contextlib import contextmanager
 from datetime import datetime
 from tkinter import colorchooser, filedialog, messagebox, simpledialog, ttk
 import tkinter as tk
@@ -29,17 +30,29 @@ THEMES = {
         "TEXT_MUTED": "#94a3b8",
     },
     "beige": {
-        "APP_BG": "#f1e7d3",
-        "PANEL_BG": "#f5eddc",
-        "CONTENT_BG": "#f9f3e6",
-        "CARD_BG": "#fffaf2",
-        "CARD_BORDER": "#d8c8ab",
-        "CARD_DELETE_BG": "#f6d6d0",
-        "PRIMARY_ACCENT": "#c89f65",
-        "TEXT_PRIMARY": "#2c2114",
-        "TEXT_MUTED": "#6b5c4b",
+        "APP_BG": "#fdfdfc",
+        "PANEL_BG": "#f1f5fb",
+        "CONTENT_BG": "#ffffff",
+        "CARD_BG": "#fefefe",
+        "CARD_BORDER": "#cfd8e3",
+        "CARD_DELETE_BG": "#ffe5e5",
+        "PRIMARY_ACCENT": "#d64045",
+        "TEXT_PRIMARY": "#1e2a3b",
+        "TEXT_MUTED": "#55657a",
     },
 }
+
+THEME_KEYS = [
+    "APP_BG",
+    "PANEL_BG",
+    "CONTENT_BG",
+    "CARD_BG",
+    "CARD_BORDER",
+    "CARD_DELETE_BG",
+    "PRIMARY_ACCENT",
+    "TEXT_PRIMARY",
+    "TEXT_MUTED",
+]
 
 APP_BG = THEMES["dark"]["APP_BG"]
 PANEL_BG = THEMES["dark"]["PANEL_BG"]
@@ -83,6 +96,8 @@ class CardApp:
         self.max_history = 7
         self.bin_history: list[dict] = []
         self.active_dialogs: list[tk.Toplevel] = []
+        self.custom_theme = copy.deepcopy(THEMES.get("beige", THEMES["dark"]))
+        self._ui_transition_depth = 0
 
         self.style = ttk.Style()
         self.primary_accent = PRIMARY_ACCENT
@@ -104,67 +119,139 @@ class CardApp:
         self.apply_theme(self.theme_name, initial=True)
 
     def apply_theme(self, theme_name: str, initial: bool = False):
-        theme = THEMES.get(theme_name, THEMES["dark"])
-        self.theme_name = theme_name
+        with self.smooth_state_transition():
+            theme = THEMES.get(theme_name, THEMES["dark"])
+            self.theme_name = theme_name
 
-        global APP_BG, PANEL_BG, CONTENT_BG, CARD_BG, CARD_BORDER, CARD_DELETE_BG, PRIMARY_ACCENT, TEXT_PRIMARY, TEXT_MUTED
-        APP_BG = theme["APP_BG"]
-        PANEL_BG = theme["PANEL_BG"]
-        CONTENT_BG = theme["CONTENT_BG"]
-        CARD_BG = theme["CARD_BG"]
-        CARD_BORDER = theme["CARD_BORDER"]
-        CARD_DELETE_BG = theme["CARD_DELETE_BG"]
-        PRIMARY_ACCENT = theme["PRIMARY_ACCENT"]
-        TEXT_PRIMARY = theme["TEXT_PRIMARY"]
-        TEXT_MUTED = theme["TEXT_MUTED"]
+            global APP_BG, PANEL_BG, CONTENT_BG, CARD_BG, CARD_BORDER, CARD_DELETE_BG, PRIMARY_ACCENT, TEXT_PRIMARY, TEXT_MUTED
+            APP_BG = theme["APP_BG"]
+            PANEL_BG = theme["PANEL_BG"]
+            CONTENT_BG = theme["CONTENT_BG"]
+            CARD_BG = theme["CARD_BG"]
+            CARD_BORDER = theme["CARD_BORDER"]
+            CARD_DELETE_BG = theme["CARD_DELETE_BG"]
+            PRIMARY_ACCENT = theme["PRIMARY_ACCENT"]
+            TEXT_PRIMARY = theme["TEXT_PRIMARY"]
+            TEXT_MUTED = theme["TEXT_MUTED"]
 
-        self.primary_accent = PRIMARY_ACCENT
-        self.root.configure(bg=APP_BG)
+            self.primary_accent = PRIMARY_ACCENT
+            self.root.configure(bg=APP_BG)
 
-        self.style.configure("App.TFrame", background=APP_BG)
-        self.style.configure("Toolbar.TFrame", background=APP_BG)
-        self.style.configure("Nav.TFrame", background=APP_BG)
-        self.style.configure("Content.TFrame", background=APP_BG)
-        self.style.configure("Controls.TFrame", background=APP_BG)
-        self.style.configure("Board.TFrame", background=CONTENT_BG)
-        self.style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"), foreground=TEXT_PRIMARY, background=APP_BG)
-        self.style.configure("Subtitle.TLabel", font=("Segoe UI", 11), foreground=TEXT_MUTED, background=APP_BG)
-        self.style.configure("Placeholder.TFrame", background=CONTENT_BG)
-        self.style.configure("PlaceholderTitle.TLabel", font=("Segoe UI", 16, "bold"), foreground=TEXT_PRIMARY, background=CONTENT_BG)
-        self.style.configure("PlaceholderBody.TLabel", font=("Segoe UI", 11), foreground=TEXT_MUTED, background=CONTENT_BG)
-        self.style.configure("Primary.TButton", font=("Segoe UI", 10, "bold"), foreground="#04111f", padding=(12, 6))
-        self.style.map(
-            "Primary.TButton",
-            background=[("pressed", PRIMARY_ACCENT), ("active", PRIMARY_ACCENT), ("!disabled", PRIMARY_ACCENT)],
-        )
-        self.style.configure("Secondary.TButton", font=("Segoe UI", 10), padding=(10, 6), foreground=TEXT_PRIMARY)
-        self.style.map(
-            "Secondary.TButton",
-            background=[("pressed", PANEL_BG), ("active", PANEL_BG), ("!disabled", PANEL_BG)],
-            foreground=[("disabled", TEXT_MUTED), ("!disabled", TEXT_PRIMARY)],
-        )
+            self.style.configure("App.TFrame", background=APP_BG)
+            self.style.configure("Toolbar.TFrame", background=APP_BG)
+            self.style.configure("Nav.TFrame", background=APP_BG)
+            self.style.configure("Content.TFrame", background=APP_BG)
+            self.style.configure("Controls.TFrame", background=APP_BG)
+            self.style.configure("Board.TFrame", background=CONTENT_BG)
+            self.style.configure("Title.TLabel", font=("Segoe UI", 18, "bold"), foreground=TEXT_PRIMARY, background=APP_BG)
+            self.style.configure("Subtitle.TLabel", font=("Segoe UI", 11), foreground=TEXT_MUTED, background=APP_BG)
+            self.style.configure("Placeholder.TFrame", background=CONTENT_BG)
+            self.style.configure("PlaceholderTitle.TLabel", font=("Segoe UI", 16, "bold"), foreground=TEXT_PRIMARY, background=CONTENT_BG)
+            self.style.configure("PlaceholderBody.TLabel", font=("Segoe UI", 11), foreground=TEXT_MUTED, background=CONTENT_BG)
+            self.style.configure("Primary.TButton", font=("Segoe UI", 10, "bold"), foreground="#04111f", padding=(12, 6))
+            self.style.map(
+                "Primary.TButton",
+                background=[("pressed", PRIMARY_ACCENT), ("active", PRIMARY_ACCENT), ("!disabled", PRIMARY_ACCENT)],
+            )
+            self.style.configure("Secondary.TButton", font=("Segoe UI", 10), padding=(10, 6), foreground=TEXT_PRIMARY)
+            self.style.map(
+                "Secondary.TButton",
+                background=[("pressed", PANEL_BG), ("active", PANEL_BG), ("!disabled", PANEL_BG)],
+                foreground=[("disabled", TEXT_MUTED), ("!disabled", TEXT_PRIMARY)],
+            )
 
-        self.style.configure(
-            "Navigation.Treeview",
-            rowheight=28,
-            background=PANEL_BG,
-            fieldbackground=PANEL_BG,
-            foreground=TEXT_PRIMARY,
-            borderwidth=0,
-        )
-        self.style.map(
-            "Navigation.Treeview",
-            background=[("selected", PRIMARY_ACCENT)],
-            foreground=[("selected", "#ffffff")],
-        )
+            self.style.configure(
+                "Navigation.Treeview",
+                rowheight=28,
+                background=PANEL_BG,
+                fieldbackground=PANEL_BG,
+                foreground=TEXT_PRIMARY,
+                borderwidth=0,
+            )
+            self.style.map(
+                "Navigation.Treeview",
+                background=[("selected", PRIMARY_ACCENT)],
+                foreground=[("selected", "#ffffff")],
+            )
 
-        self.style.configure("TScrollbar", troughcolor=PANEL_BG, background=CARD_BORDER)
-        self._style_file_path_label()
+            self.style.configure("TScrollbar", troughcolor=PANEL_BG, background=CARD_BORDER)
+            self._style_file_path_label()
 
-        if not initial:
-            self.update_file_path_label()
-            self.build_navigation_tree()
-            self.update_table()
+            if not initial:
+                self.update_file_path_label()
+                self.build_navigation_tree()
+                self.update_table()
+
+    def _normalize_hex_color(self, value: str) -> str:
+        candidate = (value or "").strip()
+        if not candidate:
+            raise ValueError("Farbwert darf nicht leer sein")
+        if not candidate.startswith("#"):
+            candidate = f"#{candidate}"
+        if len(candidate) != 7:
+            raise ValueError("Bitte hexadezimale Farben im Format #RRGGBB eingeben")
+        try:
+            int(candidate[1:], 16)
+        except ValueError as exc:
+            raise ValueError("Ungültiger Hexwert") from exc
+        return candidate.lower()
+
+    def show_custom_theme_dialog(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Eigenes Theme")
+        dialog.resizable(False, False)
+        self.register_dialog(dialog)
+
+        current_values = {key: self.custom_theme.get(key, THEMES[self.theme_name].get(key, "#ffffff")) for key in THEME_KEYS}
+        vars_by_key: dict[str, tk.StringVar] = {}
+
+        ttk.Label(dialog, text="Wähle individuelle Farben für die Oberfläche.", style="Subtitle.TLabel").pack(padx=16, pady=(16, 8), anchor=tk.W)
+
+        for key in THEME_KEYS:
+            row = ttk.Frame(dialog)
+            row.pack(fill=tk.X, padx=16, pady=4)
+            label_text = key.replace("_", " ")
+            ttk.Label(row, text=label_text).pack(side=tk.LEFT)
+            var = tk.StringVar(value=current_values.get(key, "#ffffff"))
+            vars_by_key[key] = var
+            entry = ttk.Entry(row, textvariable=var, width=12)
+            entry.pack(side=tk.LEFT, padx=(8, 8))
+
+            def make_picker(target_key: str):
+                def _pick_color():
+                    initial = vars_by_key[target_key].get()
+                    rgb, hex_value = colorchooser.askcolor(color=initial or "#ffffff", parent=dialog)
+                    if hex_value:
+                        vars_by_key[target_key].set(hex_value)
+                return _pick_color
+
+            ttk.Button(row, text="Farbe wählen", command=make_picker(key)).pack(side=tk.LEFT)
+
+        status_var = tk.StringVar()
+        ttk.Label(dialog, textvariable=status_var, foreground="red").pack(padx=16, pady=(8, 0), anchor=tk.W)
+
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill=tk.X, padx=16, pady=(16, 16))
+
+        def apply_custom_theme(close_after: bool = False):
+            new_theme = {}
+            try:
+                for key, var in vars_by_key.items():
+                    new_theme[key] = self._normalize_hex_color(var.get())
+            except ValueError as exc:
+                status_var.set(str(exc))
+                return
+
+            self.custom_theme = new_theme
+            THEMES["custom"] = new_theme
+            status_var.set("Benutzerdefiniertes Theme aktiv.")
+            self.apply_theme("custom")
+            if close_after:
+                self.close_dialog(dialog)
+
+        ttk.Button(button_frame, text="Abbrechen", command=lambda: self.close_dialog(dialog)).pack(side=tk.RIGHT, padx=(8, 0))
+        ttk.Button(button_frame, text="Anwenden", command=lambda: apply_custom_theme(False)).pack(side=tk.RIGHT, padx=(8, 0))
+        ttk.Button(button_frame, text="Speichern & schließen", command=lambda: apply_custom_theme(True)).pack(side=tk.RIGHT)
 
     def _style_file_path_label(self):
         if hasattr(self, "file_path_label"):
@@ -222,6 +309,8 @@ class CardApp:
         space_menu.add_separator()
         space_menu.add_command(label="Space importieren…", command=self.import_table_from_file)
         space_menu.add_command(label="Space exportieren…", command=self.export_current_table)
+        space_menu.add_command(label="Karten importieren…", command=self.import_cards_via_text)
+        space_menu.add_command(label="Import", command=self.import_cards_via_text)
         space_menu.add_separator()
         space_menu.add_command(label="Space duplizieren…", command=self.duplicate_current_table)
         space_menu.add_command(label="Tabelle verschieben/kopieren…", command=self.transfer_table_between_spaces)
@@ -230,6 +319,8 @@ class CardApp:
         theme_menu = tk.Menu(space_menu, tearoff=0)
         theme_menu.add_command(label="Dunkel", command=lambda: self.apply_theme("dark"))
         theme_menu.add_command(label="Beige", command=lambda: self.apply_theme("beige"))
+        theme_menu.add_separator()
+        theme_menu.add_command(label="Eigenes Theme…", command=self.show_custom_theme_dialog)
         space_menu.add_cascade(label="Theme", menu=theme_menu)
 
         help_menu = tk.Menu(self.menubar, tearoff=0)
@@ -358,6 +449,26 @@ class CardApp:
         if dialog in self.active_dialogs:
             self.active_dialogs.remove(dialog)
         dialog.destroy()
+
+    @contextmanager
+    def smooth_state_transition(self):
+        self._ui_transition_depth += 1
+        if self._ui_transition_depth == 1:
+            try:
+                self.root.configure(cursor="watch")
+            except tk.TclError:
+                pass
+            self.root.update_idletasks()
+        try:
+            yield
+        finally:
+            self._ui_transition_depth = max(0, self._ui_transition_depth - 1)
+            if self._ui_transition_depth == 0:
+                try:
+                    self.root.configure(cursor="")
+                except tk.TclError:
+                    pass
+                self.root.after_idle(self.root.update_idletasks)
 
     def _capture_history_state(self) -> dict:
         return {
@@ -524,6 +635,10 @@ class CardApp:
         self.update_table()
 
     def build_navigation_tree(self):
+        with self.smooth_state_transition():
+            self._build_navigation_tree_impl()
+
+    def _build_navigation_tree_impl(self):
         if not hasattr(self, "navigation_tree"):
             return
 
@@ -608,19 +723,25 @@ class CardApp:
         ttk.Label(placeholder, text=title, style="PlaceholderTitle.TLabel").pack(anchor=tk.CENTER)
         ttk.Label(placeholder, text=subtitle, style="PlaceholderBody.TLabel", wraplength=520, justify="center").pack(anchor=tk.CENTER, pady=(12, 0))
 
-    def _compute_row_header_color(self, row_color: str, ratio: float, expected_grade: float) -> str:
-        safe_ratio = max(0.0, min(ratio or 0.0, 1.0))
-        grade_factor = 0.0
-        if expected_grade:
-            grade_factor = max(0.0, min((expected_grade - 4.0) / 2.0, 1.0))
-        softened_color = interpolate_color(row_color, "#ffffff", 0.5 * grade_factor)
-        return interpolate_color("#ffffff", softened_color, safe_ratio)
+    def _get_contrast_color(self, hex_color: str | None) -> str:
+        if not hex_color:
+            return TEXT_PRIMARY
+        try:
+            cleaned = hex_color.lstrip("#")
+            r = int(cleaned[0:2], 16)
+            g = int(cleaned[2:4], 16)
+            b = int(cleaned[4:6], 16)
+        except (ValueError, IndexError, TypeError):
+            return TEXT_PRIMARY
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        return "#000000" if luminance > 0.6 else "#ffffff"
 
     def render_row_header(self, row_name: str, ratio: float, expected_grade: float, row_color: str, total_cards: int):
-        header_color = self._compute_row_header_color(row_color, ratio, expected_grade)
+        header_color = row_color or PANEL_BG
         header = tk.Frame(self.table, bg=header_color, padx=18, pady=18, highlightthickness=0)
         header.grid(row=0, column=0, sticky=tk.EW, pady=(0, 18))
         header.columnconfigure(0, weight=1)
+        header.columnconfigure(1, weight=0)
 
         title = tk.Label(header, text=row_name, font=("Segoe UI", 18, "bold"), bg=header_color, fg=TEXT_PRIMARY)
         title.grid(row=0, column=0, sticky=tk.W)
@@ -633,11 +754,31 @@ class CardApp:
             fg=TEXT_PRIMARY,
         )
         subtitle.grid(row=1, column=0, sticky=tk.W, pady=(8, 0))
+
+        button_bg = row_color or PANEL_BG
+        contrast_fg = self._get_contrast_color(button_bg)
+        color_button = tk.Button(
+            header,
+            text="Farbe",
+            font=("Segoe UI", 9, "bold"),
+            command=lambda rn=row_name: self.pick_row_color(rn),
+            bg=button_bg,
+            fg=contrast_fg,
+            activebackground=button_bg,
+            activeforeground=contrast_fg,
+            relief="flat",
+            bd=0,
+            padx=12,
+            pady=8,
+        )
+        color_button.grid(row=0, column=1, rowspan=2, sticky=tk.NE, padx=(12, 0))
+
         self.row_header_widgets = {
             "row_name": row_name,
             "frame": header,
             "title": title,
             "subtitle": subtitle,
+            "color_button": color_button,
         }
 
     def render_board_for_row(self, row_name: str, columns: list[str], cards: dict, row_color: str):
@@ -713,9 +854,14 @@ class CardApp:
             card_frame.pack(fill=tk.X, pady=6)
             self._bind_card_widget(card_frame, row_name, col_name, card_front)
             card_frame._is_card_frame = True
+            card_frame._card_payload = card_dict
+
+            header_bar = tk.Frame(card_frame, bg=base_bg)
+            header_bar.pack(fill=tk.X)
+            self._bind_card_widget(header_bar, row_name, col_name, card_front)
 
             title = tk.Label(
-                card_frame,
+                header_bar,
                 text=card_front,
                 font=("Segoe UI", 11, "bold"),
                 bg=base_bg,
@@ -723,8 +869,25 @@ class CardApp:
                 wraplength=220,
                 justify=tk.LEFT,
             )
-            title.pack(fill=tk.X)
+            title.pack(side=tk.LEFT, fill=tk.X, expand=True)
             self._bind_card_widget(title, row_name, col_name, card_front)
+
+            has_back_text = bool(card_dict.get("back", "").strip())
+            note_bg = self.primary_accent if has_back_text else CARD_BORDER
+            note_fg = "#ffffff" if has_back_text else TEXT_PRIMARY
+            note_button = tk.Button(
+                header_bar,
+                text="📝",
+                width=2,
+                bg=note_bg,
+                fg=note_fg,
+                bd=0,
+                relief="flat",
+                activebackground=self.primary_accent,
+                activeforeground="#ffffff",
+                command=lambda rn=row_name, cn=col_name, cf=card_front: self._open_card_back_editor(rn, cn, cf),
+            )
+            note_button.pack(side=tk.RIGHT, padx=(8, 0))
 
             if card_dict.get("back"):
                 display_text = card_dict["back"]
@@ -823,14 +986,15 @@ class CardApp:
             if col in cards[row_name]:
                 total_cards += len(cards[row_name][col])
 
+        row_color = row_colors.get(row_name, self.primary_accent)
         ratio = calculate_ratio(row_name, cards, columns)
         expected_grade = calculate_expected_grade(row_name, cards, columns)
-        row_color = row_colors.get(row_name, self.primary_accent)
-        header_color = self._compute_row_header_color(row_color, ratio, expected_grade if expected_grade else 0)
+        header_color = row_color or PANEL_BG
 
         header = header_info.get("frame")
         title = header_info.get("title")
         subtitle = header_info.get("subtitle")
+        color_button = header_info.get("color_button")
         if not header or not title or not subtitle:
             return False
 
@@ -843,7 +1007,38 @@ class CardApp:
                 child.configure(bg=header_color)
             except tk.TclError:
                 continue
+        if color_button:
+            button_bg = row_color or PANEL_BG
+            contrast_fg = self._get_contrast_color(button_bg)
+            color_button.configure(
+                bg=button_bg,
+                fg=contrast_fg,
+                activebackground=button_bg,
+                activeforeground=contrast_fg,
+            )
         return True
+
+    def pick_row_color(self, row_name: str):
+        table_data = self.get_current_table_data()
+        if table_data is None:
+            return
+        row_colors = table_data.get("row_colors", {})
+        if row_name not in row_colors:
+            return
+
+        current_color = row_colors.get(row_name, self.primary_accent)
+        chosen = colorchooser.askcolor(color=current_color, title="Tabellenfarbe wählen")
+        if not chosen or not chosen[1]:
+            return
+        new_hex = chosen[1]
+        if not new_hex or new_hex == current_color:
+            return
+
+        self._record_history()
+        row_colors[row_name] = new_hex
+        self.save_data()
+        if not self.update_row_header_info(row_name):
+            self.update_table()
 
     def _extract_card_weight(self, card_dict: dict) -> float:
         try:
@@ -1034,6 +1229,10 @@ class CardApp:
         return result["value"]
 
     def update_table(self):
+        with self.smooth_state_transition():
+            self._update_table_impl()
+
+    def _update_table_impl(self):
         table_data = self.get_current_table_data()
         if table_data is None:
             self.render_placeholder("Kein Space vorhanden", "Erstelle über Optionen einen neuen Space oder importiere einen Speicherstand.")
@@ -1163,33 +1362,35 @@ class CardApp:
 
     def save_data(self):
         global SAVE_FILE
-        try:
-            directory = os.path.dirname(SAVE_FILE)
-            if directory:
-                os.makedirs(directory, exist_ok=True)
-            with open(SAVE_FILE, "w", encoding='utf-8') as f:
-                json.dump(self.data, f, indent=4, ensure_ascii=False)
-        except Exception as exc:
-            messagebox.showerror("Fehler", f"Fehler beim Speichern der Daten: {exc}")
-        self.update_file_path_label()
+        with self.smooth_state_transition():
+            try:
+                directory = os.path.dirname(SAVE_FILE)
+                if directory:
+                    os.makedirs(directory, exist_ok=True)
+                with open(SAVE_FILE, "w", encoding='utf-8') as f:
+                    json.dump(self.data, f, indent=4, ensure_ascii=False)
+            except Exception as exc:
+                messagebox.showerror("Fehler", f"Fehler beim Speichern der Daten: {exc}")
+            self.update_file_path_label()
 
     def load_data(self):
         global SAVE_FILE
-        try:
-            with open(SAVE_FILE, "r", encoding='utf-8') as f:
-                self.data = json.load(f)
-        except FileNotFoundError:
-            self.data = {"tables": {}, "current_table": None}
-        except json.JSONDecodeError:
-            messagebox.showerror("Fehler", "Die JSON-Datei ist beschädigt oder hat ein ungültiges Format.")
-            self.data = {"tables": {}, "current_table": None}
+        with self.smooth_state_transition():
+            try:
+                with open(SAVE_FILE, "r", encoding='utf-8') as f:
+                    self.data = json.load(f)
+            except FileNotFoundError:
+                self.data = {"tables": {}, "current_table": None}
+            except json.JSONDecodeError:
+                messagebox.showerror("Fehler", "Die JSON-Datei ist beschädigt oder hat ein ungültiges Format.")
+                self.data = {"tables": {}, "current_table": None}
 
-        if "tables" not in self.data:
-            self.data["tables"] = {}
-        if "current_table" not in self.data:
-            self.data["current_table"] = None
+            if "tables" not in self.data:
+                self.data["tables"] = {}
+            if "current_table" not in self.data:
+                self.data["current_table"] = None
 
-        self.update_file_path_label()
+            self.update_file_path_label()
 
     def open_options_dialog(self):
         options_popup = tk.Toplevel(self.root)
@@ -1843,6 +2044,171 @@ class CardApp:
         self.update_table()
         messagebox.showinfo("Erfolg", f"Space '{table_name}' importiert.")
 
+    def _parse_card_import_block(self, raw_text: str) -> tuple[str, list[tuple[str, str]]]:
+        text = raw_text.strip()
+        if not text:
+            raise ValueError("Kein Inhalt zum Importieren gefunden.")
+
+        def strip_braces(payload: str) -> str:
+            payload = payload.strip()
+            if payload.startswith("{") and payload.endswith("}"):
+                return payload[1:-1].strip()
+            return payload
+
+        text = strip_braces(text)
+        if "::" not in text:
+            raise ValueError("Format ungültig: '::' zwischen Space und Kartenblock fehlt.")
+
+        space_part, remainder = text.split("::", 1)
+        space_name = space_part.strip()
+        if not space_name:
+            raise ValueError("Space-Name konnte nicht gelesen werden.")
+
+        remainder = strip_braces(remainder)
+        if not remainder:
+            raise ValueError("Der Kartenblock ist leer.")
+
+        cards_payload: list[tuple[str, str]] = []
+        for raw_line in remainder.split(";"):
+            line = raw_line.strip()
+            if not line:
+                continue
+            if "::" in line:
+                front, back = line.split("::", 1)
+            else:
+                front, back = line, ""
+            front = front.strip()
+            back = back.strip()
+            if not front:
+                continue
+            cards_payload.append((front, back))
+
+        if not cards_payload:
+            raise ValueError("Es konnten keine gültigen Kartenzeilen gelesen werden.")
+
+        return space_name, cards_payload
+
+    def _apply_card_import(self, space_name: str, cards_payload: list[tuple[str, str]]):
+        table_data = self.data.get("tables", {}).get(space_name)
+        if not table_data:
+            messagebox.showerror("Fehler", f"Space '{space_name}' existiert nicht.")
+            return
+
+        rows = table_data.get("rows", [])
+        if not rows:
+            messagebox.showerror("Fehler", f"Space '{space_name}' enthält keine Tabellen zum Befüllen.")
+            return
+
+        if self.data.get("current_table") == space_name and self.selected_row_name in rows:
+            row_name = self.selected_row_name
+        else:
+            row_name = self._prompt_row_name(
+                "Zieltabelle wählen",
+                f"In welche Tabelle innerhalb von '{space_name}' sollen die Karten importiert werden?",
+                rows,
+            )
+            if not row_name or row_name not in rows:
+                return
+
+        columns = table_data.get("columns", [])
+        if not columns:
+            messagebox.showerror("Fehler", "Der Space verfügt über keine Spalten.")
+            return
+
+        cards = table_data.setdefault("cards", {})
+        if row_name not in cards:
+            cards[row_name] = {col: [] for col in columns}
+        else:
+            for col in columns:
+                cards[row_name].setdefault(col, [])
+
+        first_column = columns[0]
+        existing_fronts = set()
+        for col in columns:
+            for card in cards[row_name].get(col, []):
+                existing_fronts.add(str(card.get("front", "")))
+
+        unique_payload: list[tuple[str, str]] = []
+        skipped: list[str] = []
+        for front, back in cards_payload:
+            if front in existing_fronts:
+                skipped.append(front)
+                continue
+            existing_fronts.add(front)
+            unique_payload.append((front, back))
+
+        if not unique_payload:
+            messagebox.showinfo("Keine neuen Karten", "Alle übergebenen Karten existieren bereits in dieser Tabelle.")
+            return
+
+        self._record_history()
+        for front, back in unique_payload:
+            cards[row_name][first_column].append(create_card(front, back))
+
+        self.data["current_table"] = space_name
+        self.selected_row_name = row_name
+        self.save_data()
+        self.build_navigation_tree()
+        self.update_table()
+
+        summary = f"{len(unique_payload)} Karten importiert."
+        if skipped:
+            summary += f" {len(skipped)} doppelte Einträge übersprungen."
+        messagebox.showinfo("Import abgeschlossen", summary)
+
+    def import_cards_via_text(self):
+        if not self.data.get("tables"):
+            messagebox.showerror("Fehler", "Keine Spaces vorhanden, in die importiert werden könnte.")
+            return
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Karten importieren")
+        dialog.geometry("560x400")
+        dialog.minsize(460, 320)
+        self.register_dialog(dialog)
+
+        instructions = (
+            "Format: {Space::{Kartenvorderseite :: optionale Rückseite; …}}\n"
+            "Der angegebene Space muss bereits existieren."
+        )
+        ttk.Label(dialog, text=instructions, wraplength=520, justify=tk.LEFT).pack(padx=16, pady=(16, 8), anchor=tk.W)
+
+        text_widget = tk.Text(dialog, wrap="word")
+        text_widget.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 8))
+
+        example = "{\nMeinSpace::{\nFragenname :: Hinweis;\nWeiterer Begriff :: ;\n}\n}"
+        text_widget.insert("1.0", example)
+
+        error_var = tk.StringVar()
+        ttk.Label(dialog, textvariable=error_var, foreground="red").pack(padx=16, pady=(0, 8), anchor=tk.W)
+
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill=tk.X, padx=16, pady=(0, 16))
+
+        def close_dialog_local():
+            self.close_dialog(dialog)
+
+        def confirm_import():
+            raw_text = text_widget.get("1.0", "end-1c")
+            try:
+                space_name, payload = self._parse_card_import_block(raw_text)
+            except ValueError as exc:
+                error_var.set(str(exc))
+                return
+
+            if space_name not in self.data.get("tables", {}):
+                error_var.set(f"Space '{space_name}' existiert nicht.")
+                return
+
+            self.close_dialog(dialog)
+            self._apply_card_import(space_name, payload)
+
+        ttk.Button(button_frame, text="Abbrechen", command=close_dialog_local).pack(side=tk.RIGHT, padx=(8, 0))
+        ttk.Button(button_frame, text="Importieren", command=confirm_import).pack(side=tk.RIGHT)
+
+        text_widget.focus_set()
+        dialog.bind("<Control-Return>", lambda event: (confirm_import(), "break"))
+
     def export_current_table(self):
         current_table = self.data.get("current_table")
         if not current_table or current_table not in self.data.get("tables", {}):
@@ -2000,7 +2366,7 @@ class CardApp:
                     self.save_data()
                     self.update_table()
 
-    def on_card_right_click(self, row_name: str, col_name: str, card_front: str):
+    def _open_card_back_editor(self, row_name: str, col_name: str, card_front: str):
         table_data = self.get_current_table_data()
         if table_data is None:
             return
@@ -2012,25 +2378,59 @@ class CardApp:
 
         editor = tk.Toplevel(self.root)
         editor.title(f"Kartenrückseite - {card_front}")
-        editor.geometry("400x300")
+        editor.geometry("420x320")
+        self.register_dialog(editor)
 
-        text_widget = tk.Text(editor, wrap="word")
-        text_widget.pack(fill=tk.BOTH, expand=True)
-        text_widget.insert("1.0", card_dict["back"])
+        text_widget = tk.Text(editor, wrap="word", font=("Segoe UI", 10))
+        text_widget.pack(fill=tk.BOTH, expand=True, padx=12, pady=(12, 0))
+        text_widget.insert("1.0", card_dict.get("back", ""))
 
-        def close_editor(_event=None):
+        status_var = tk.StringVar()
+        status_label = ttk.Label(editor, textvariable=status_var, foreground=TEXT_MUTED)
+        status_label.pack(anchor=tk.W, padx=12, pady=(6, 0))
+
+        button_frame = ttk.Frame(editor)
+        button_frame.pack(fill=tk.X, padx=12, pady=12)
+
+        def persist_changes() -> bool:
+            new_text = text_widget.get("1.0", "end-1c")
+            if new_text == card_dict.get("back", ""):
+                return False
             self._record_history()
-            card_dict["back"] = text_widget.get("1.0", "end-1c")
+            card_dict["back"] = new_text
             self.save_data()
-            editor.destroy()
+            self.refresh_card_column(row_name, col_name)
+            return True
 
-        editor.bind("<Escape>", close_editor)
+        def save_and_close(_event=None):
+            changed = persist_changes()
+            if changed:
+                status_var.set("Änderungen gespeichert.")
+            self.close_dialog(editor)
+
+        def save_only(_event=None):
+            changed = persist_changes()
+            status_var.set("Änderungen gespeichert." if changed else "Keine Änderungen.")
+
+        ttk.Button(button_frame, text="Speichern", command=save_only).pack(side=tk.LEFT)
+        ttk.Button(button_frame, text="Speichern & schließen", command=save_and_close).pack(side=tk.RIGHT)
+
+        def _on_ctrl_s(event):
+            save_only()
+            return "break"
+
+        editor.bind("<Control-s>", _on_ctrl_s)
+        editor.bind("<Escape>", save_and_close)
+
+    def on_card_right_click(self, row_name: str, col_name: str, card_front: str):
+        self._open_card_back_editor(row_name, col_name, card_front)
 
     def on_card_press(self, event, row_name: str, col_name: str, card_front: str):
         if self.delete_mode or self.mark_mode:
             self.drag_data = None
             return
         card_frame = self._get_card_frame(event.widget)
+        payload = getattr(card_frame, "_card_payload", None)
         self.drag_data = {
             "row": row_name,
             "col": col_name,
@@ -2038,6 +2438,7 @@ class CardApp:
             "start": (event.x_root, event.y_root),
             "widget": card_frame,
             "moved": False,
+            "payload": payload,
         }
         self.moving_card = None
 
@@ -2049,7 +2450,7 @@ class CardApp:
         dy = abs(event.y_root - start_y)
         if not self.drag_data["moved"] and max(dx, dy) > 8:
             self.drag_data["moved"] = True
-            self.create_drag_preview(self.drag_data["card"])
+            self.create_drag_preview(self.drag_data.get("payload"))
         if not self.drag_data["moved"]:
             return
         self.update_drag_preview_position(event.x_root, event.y_root)
@@ -2069,23 +2470,57 @@ class CardApp:
         self.reset_drag_state()
         self.on_card_click(row_name, col_name, card_front)
 
-    def create_drag_preview(self, text: str):
+    def create_drag_preview(self, card_payload: dict | None):
         self.destroy_drag_preview()
+        if not card_payload:
+            return
         self.drag_preview = tk.Toplevel(self.root)
         self.drag_preview.overrideredirect(True)
         self.drag_preview.attributes("-topmost", True)
-        label = tk.Label(
+        self.drag_preview.attributes("-alpha", 0.95)
+
+        preview_frame = tk.Frame(
             self.drag_preview,
-            text=text,
+            bg=CARD_BG,
+            padx=12,
+            pady=10,
+            bd=0,
+            highlightbackground=CARD_BORDER,
+            highlightthickness=1,
+        )
+        preview_frame.pack()
+
+        tk.Label(
+            preview_frame,
+            text=str(card_payload.get("front", "")),
+            font=("Segoe UI", 11, "bold"),
             bg=CARD_BG,
             fg=TEXT_PRIMARY,
-            font=("Segoe UI", 10, "bold"),
-            padx=12,
-            pady=8,
-            bd=1,
-            relief="solid",
-        )
-        label.pack()
+            wraplength=220,
+            justify=tk.LEFT,
+        ).pack(fill=tk.X)
+
+        back_text = str(card_payload.get("back", "")).strip()
+        if back_text:
+            snippet = back_text if len(back_text) <= 120 else f"{back_text[:120]}…"
+            tk.Label(
+                preview_frame,
+                text=snippet,
+                font=("Segoe UI", 9),
+                bg=CARD_BG,
+                fg=TEXT_MUTED,
+                wraplength=220,
+                justify=tk.LEFT,
+            ).pack(fill=tk.X, pady=(6, 0))
+
+        weight = self._extract_card_weight(card_payload)
+        tk.Label(
+            preview_frame,
+            text=f"Gewicht: {weight:.0f}",
+            font=("Segoe UI", 8, "bold"),
+            bg=CARD_BG,
+            fg=TEXT_MUTED,
+        ).pack(anchor=tk.W, pady=(8, 0))
 
     def update_drag_preview_position(self, x_root: int, y_root: int):
         if not self.drag_preview:
