@@ -13,6 +13,7 @@ APP_VERSION = "2.0.0"
 CONFIG_FILENAME = "config.json"
 DEFAULT_SAVE_FILENAME = "Tabellenspeicher_neu.json"
 ASSETS_DIRNAME = "assets"
+DEFAULT_LANGUAGE = "de"
 
 
 def _project_root() -> Path:
@@ -123,3 +124,15 @@ def resource_path(relative_name: str) -> Path:
 
 def project_root() -> Path:
     return _project_root()
+
+
+def load_user_language(default: str = DEFAULT_LANGUAGE) -> str:
+    config = _load_config()
+    return config.get("language", default)
+
+
+def persist_user_language(language_code: str) -> str:
+    config = _load_config()
+    config["language"] = language_code
+    _persist_config(config)
+    return language_code

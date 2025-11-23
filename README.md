@@ -34,7 +34,7 @@ Every tagged release publishes three artifacts under the repository's **Releases
 
 ## Build & Package Yourself
 
-The single PyInstaller spec in `packaging/main.spec` works on all three platforms. You must run the build natively on each OS to get a compatible binary.
+The single PyInstaller spec in `packaging/main.spec` works on all three platforms. You must run the build natively on each OS to get a compatible binary, which means the app can already be used on Windows, macOS, and Linux as soon as you follow the corresponding steps below.
 
 ### Windows
 1. Install Python 3.11+ from python.org and run `py -m pip install --upgrade pip pyinstaller==6.11.1`.

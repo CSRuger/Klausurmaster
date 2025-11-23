@@ -17,10 +17,13 @@ from table import generate_columns, interpolate_color, random_pastel_color
 from main.runtime_paths import (
     APP_NAME,
     APP_VERSION,
+    DEFAULT_LANGUAGE,
     DEFAULT_SAVE_FILENAME,
     get_user_config_path,
     load_save_file_path,
+    load_user_language,
     persist_save_file_path,
+    persist_user_language,
     resource_path,
 )
 
@@ -44,7 +47,7 @@ THEMES = {
         "PANEL_BG": "#f1f5fb",
         "CONTENT_BG": "#ffffff",
         "CARD_BG": "#fefefe",
-        "CARD_BORDER": "#cfd8e3",
+        "CARD_BORDER": "#5490d9",
         "CARD_DELETE_BG": "#ffe5e5",
         "PRIMARY_ACCENT": "#d64045",
         "TEXT_PRIMARY": "#1e2a3b",
@@ -74,6 +77,373 @@ PRIMARY_ACCENT = THEMES["dark"]["PRIMARY_ACCENT"]
 TEXT_PRIMARY = THEMES["dark"]["TEXT_PRIMARY"]
 TEXT_MUTED = THEMES["dark"]["TEXT_MUTED"]
 
+LANGUAGE_OPTIONS = {
+    "de": "Deutsch",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français",
+    "sq": "Shqip",
+}
+
+TRANSLATIONS: dict[str, dict[str, str]] = {
+    "app.subtitle": {
+        "de": "Wähle links Space und Tabelle, um Karten zu fokussieren.",
+        "en": "Choose a space and table on the left to focus your cards.",
+        "es": "Elige a la izquierda un espacio y una tabla para enfocarte en las tarjetas.",
+        "fr": "Choisissez à gauche un espace et une table pour vous concentrer sur les cartes.",
+        "sq": "Zgjidh në të majtë një hapësirë dhe tabelë për t'u fokusuar te kartat.",
+    },
+    "nav.collections": {
+        "de": "Sammlungen",
+        "en": "Collections",
+        "es": "Colecciones",
+        "fr": "Collections",
+        "sq": "Koleksione",
+    },
+    "menu.file": {
+        "de": "Datei",
+        "en": "File",
+        "es": "Archivo",
+        "fr": "Fichier",
+        "sq": "Skedar",
+    },
+    "menu.edit": {
+        "de": "Bearbeiten",
+        "en": "Edit",
+        "es": "Editar",
+        "fr": "Édition",
+        "sq": "Redakto",
+    },
+    "menu.space": {
+        "de": "Space",
+        "en": "Space",
+        "es": "Espacio",
+        "fr": "Espace",
+        "sq": "Hapësirë",
+    },
+    "menu.help": {
+        "de": "Hilfe",
+        "en": "Help",
+        "es": "Ayuda",
+        "fr": "Aide",
+        "sq": "Ndihmë",
+    },
+    "menu.language": {
+        "de": "Sprache",
+        "en": "Language",
+        "es": "Idioma",
+        "fr": "Langue",
+        "sq": "Gjuha",
+    },
+    "menu.actions": {
+        "de": "Aktionen",
+        "en": "Actions",
+        "es": "Acciones",
+        "fr": "Actions",
+        "sq": "Veprime",
+    },
+    "menu.file.save": {
+        "de": "Speichern",
+        "en": "Save",
+        "es": "Guardar",
+        "fr": "Enregistrer",
+        "sq": "Ruaj",
+    },
+    "menu.file.reload": {
+        "de": "Neu laden",
+        "en": "Reload",
+        "es": "Recargar",
+        "fr": "Recharger",
+        "sq": "Ringarko",
+    },
+    "menu.file.view_state": {
+        "de": "Status ansehen aus…",
+        "en": "View state from…",
+        "es": "Ver estado desde…",
+        "fr": "Afficher l'état depuis…",
+        "sq": "Shiko gjendjen nga…",
+    },
+    "menu.file.load_state": {
+        "de": "Status laden aus…",
+        "en": "Load state from…",
+        "es": "Cargar estado desde…",
+        "fr": "Charger l'état depuis…",
+        "sq": "Ngarko gjendjen nga…",
+    },
+    "menu.file.add_table": {
+        "de": "Tabelle hinzufügen (Strg+N)",
+        "en": "Add table (Ctrl+N)",
+        "es": "Añadir tabla (Ctrl+N)",
+        "fr": "Ajouter une table (Ctrl+N)",
+        "sq": "Shto tabelë (Ctrl+N)",
+    },
+    "menu.file.delete_table": {
+        "de": "Tabelle löschen",
+        "en": "Delete table",
+        "es": "Eliminar tabla",
+        "fr": "Supprimer la table",
+        "sq": "Fshi tabelën",
+    },
+    "menu.file.add_card": {
+        "de": "Karte hinzufügen (1–9)",
+        "en": "Add card (1–9)",
+        "es": "Añadir tarjeta (1–9)",
+        "fr": "Ajouter une carte (1–9)",
+        "sq": "Shto kartë (1–9)",
+    },
+    "menu.file.toggle_delete": {
+        "de": "Löschmodus umschalten (Strg+W)",
+        "en": "Toggle delete mode (Ctrl+W)",
+        "es": "Cambiar modo borrar (Ctrl+W)",
+        "fr": "Basculer le mode suppression (Ctrl+W)",
+        "sq": "Ndrysho modalitetin e fshirjes (Ctrl+W)",
+    },
+    "menu.file.cancel_action": {
+        "de": "Aktion abbrechen (Esc)",
+        "en": "Cancel action (Esc)",
+        "es": "Cancelar acción (Esc)",
+        "fr": "Annuler l'action (Esc)",
+        "sq": "Anulo veprimin (Esc)",
+    },
+    "menu.file.choose_folder": {
+        "de": "Speicherordner wählen…",
+        "en": "Choose save folder…",
+        "es": "Elegir carpeta de guardado…",
+        "fr": "Choisir le dossier de sauvegarde…",
+        "sq": "Zgjidh dosjen e ruajtjes…",
+    },
+    "menu.file.change_file": {
+        "de": "Speicherdatei ändern…",
+        "en": "Change save file…",
+        "es": "Cambiar archivo de guardado…",
+        "fr": "Changer le fichier de sauvegarde…",
+        "sq": "Ndrysho skedarin e ruajtjes…",
+    },
+    "menu.file.exit": {
+        "de": "Beenden",
+        "en": "Exit",
+        "es": "Salir",
+        "fr": "Quitter",
+        "sq": "Dalje",
+    },
+    "menu.edit.undo": {
+        "de": "Rückgängig (Strg+Z)",
+        "en": "Undo (Ctrl+Z)",
+        "es": "Deshacer (Ctrl+Z)",
+        "fr": "Annuler (Ctrl+Z)",
+        "sq": "Zhbëj (Ctrl+Z)",
+    },
+    "menu.edit.redo": {
+        "de": "Wiederholen (Strg+Shift+Z)",
+        "en": "Redo (Ctrl+Shift+Z)",
+        "es": "Rehacer (Ctrl+Shift+Z)",
+        "fr": "Rétablir (Ctrl+Shift+Z)",
+        "sq": "Ribëj (Ctrl+Shift+Z)",
+    },
+    "menu.space.new": {
+        "de": "Neuer Space (Strg+S)",
+        "en": "New space (Ctrl+S)",
+        "es": "Nuevo espacio (Ctrl+S)",
+        "fr": "Nouvel espace (Ctrl+S)",
+        "sq": "Hapësirë e re (Ctrl+S)",
+    },
+    "menu.space.load": {
+        "de": "Space laden…",
+        "en": "Load space…",
+        "es": "Cargar espacio…",
+        "fr": "Charger un espace…",
+        "sq": "Ngarko hapësirë…",
+    },
+    "menu.space.import_space": {
+        "de": "Space importieren…",
+        "en": "Import space…",
+        "es": "Importar espacio…",
+        "fr": "Importer un espace…",
+        "sq": "Importo hapësirë…",
+    },
+    "menu.space.export_space": {
+        "de": "Space exportieren…",
+        "en": "Export space…",
+        "es": "Exportar espacio…",
+        "fr": "Exporter un espace…",
+        "sq": "Eksporto hapësirë…",
+    },
+    "menu.space.import_cards": {
+        "de": "Karten importieren…",
+        "en": "Import cards…",
+        "es": "Importar tarjetas…",
+        "fr": "Importer des cartes…",
+        "sq": "Importo karta…",
+    },
+    "menu.space.import_short": {
+        "de": "Import",
+        "en": "Import",
+        "es": "Importar",
+        "fr": "Importer",
+        "sq": "Importo",
+    },
+    "menu.space.duplicate": {
+        "de": "Space duplizieren…",
+        "en": "Duplicate space…",
+        "es": "Duplicar espacio…",
+        "fr": "Dupliquer l'espace…",
+        "sq": "Dupliko hapësirën…",
+    },
+    "menu.space.transfer": {
+        "de": "Tabelle verschieben/kopieren…",
+        "en": "Move/copy table…",
+        "es": "Mover/copiar tabla…",
+        "fr": "Déplacer/copier la table…",
+        "sq": "Zhvendos/kopjo tabelën…",
+    },
+    "menu.space.delete": {
+        "de": "Space löschen…",
+        "en": "Delete space…",
+        "es": "Eliminar espacio…",
+        "fr": "Supprimer l'espace…",
+        "sq": "Fshi hapësirën…",
+    },
+    "menu.space.theme": {
+        "de": "Theme",
+        "en": "Theme",
+        "es": "Tema",
+        "fr": "Thème",
+        "sq": "Tema",
+    },
+    "menu.space.theme.dark": {
+        "de": "Dunkel",
+        "en": "Dark",
+        "es": "Oscuro",
+        "fr": "Sombre",
+        "sq": "I errët",
+    },
+    "menu.space.theme.beige": {
+        "de": "Beige",
+        "en": "Beige",
+        "es": "Beige",
+        "fr": "Beige",
+        "sq": "Bezhë",
+    },
+    "menu.space.theme.custom": {
+        "de": "Eigenes Theme…",
+        "en": "Custom theme…",
+        "es": "Tema personalizado…",
+        "fr": "Thème personnalisé…",
+        "sq": "Temë e personalizuar…",
+    },
+    "menu.help.about": {
+        "de": "Über",
+        "en": "About",
+        "es": "Acerca de",
+        "fr": "À propos",
+        "sq": "Rreth",
+    },
+    "action.toggle_mark_mode": {
+        "de": "Markiermodus umschalten",
+        "en": "Toggle mark mode",
+        "es": "Cambiar modo marcado",
+        "fr": "Basculer le mode de marquage",
+        "sq": "Ndrysho modalitetin e shënimit",
+    },
+    "save_prompt.title": {
+        "de": "Speicherort wählen",
+        "en": "Choose storage location",
+        "es": "Elegir ubicación de guardado",
+        "fr": "Choisir l'emplacement de stockage",
+        "sq": "Zgjidh vendndodhjen e ruajtjes",
+    },
+    "save_prompt.body": {
+        "de": "Klausurmaster benötigt einen Speicherordner für Ihre Tabellen.\n\nMöchten Sie jetzt einen Ordner wählen? Andernfalls wird der Standardordner im Benutzerverzeichnis verwendet.",
+        "en": "Klausurmaster needs a folder to store your tables.\n\nDo you want to choose one now? Otherwise the default directory in your user profile will be used.",
+        "es": "Klausurmaster necesita una carpeta para guardar tus tablas.\n\n¿Quieres elegir una ahora? De lo contrario se usará la carpeta predeterminada de tu perfil.",
+        "fr": "Klausurmaster a besoin d'un dossier pour enregistrer vos tableaux.\n\nSouhaitez-vous en choisir un maintenant ? Sinon, le dossier par défaut de votre profil sera utilisé.",
+        "sq": "Klausurmaster ka nevojë për një dosje për të ruajtur tabelat tuaja.\n\nDëshiron të zgjedhësh tani një dosje? Përndryshe përdoret dosja standarde në profilin tënd.",
+    },
+    "save_prompt.default_title": {
+        "de": "Standard verwendet",
+        "en": "Default used",
+        "es": "Se usa el predeterminado",
+        "fr": "Emplacement par défaut",
+        "sq": "Është përdorur parazgjedhja",
+    },
+    "save_prompt.default_body": {
+        "de": "Es wird der Standardordner verwendet.",
+        "en": "The default folder will be used.",
+        "es": "Se usará la carpeta predeterminada.",
+        "fr": "Le dossier par défaut sera utilisé.",
+        "sq": "Do të përdoret dosja e parazgjedhur.",
+    },
+    "status.current_path": {
+        "de": "Aktueller Speicherpfad: {path}",
+        "en": "Current save path: {path}",
+        "es": "Ruta de guardado actual: {path}",
+        "fr": "Chemin d'enregistrement actuel : {path}",
+        "sq": "Shtegu aktual i ruajtjes: {path}",
+    },
+    "choose_directory.success_title": {
+        "de": "Erfolg",
+        "en": "Success",
+        "es": "Éxito",
+        "fr": "Succès",
+        "sq": "Sukses",
+    },
+    "choose_directory.success_body": {
+        "de": "Speicherpfad gesetzt auf:\n{path}",
+        "en": "Save path set to:\n{path}",
+        "es": "Ruta de guardado establecida en:\n{path}",
+        "fr": "Chemin d'enregistrement défini sur :\n{path}",
+        "sq": "Shtegu i ruajtjes u vendos në:\n{path}",
+    },
+    "change_save.option_title": {
+        "de": "Speicheroption",
+        "en": "Storage option",
+        "es": "Opción de guardado",
+        "fr": "Option de stockage",
+        "sq": "Opsioni i ruajtjes",
+    },
+    "change_save.option_question": {
+        "de": "Möchten Sie eine neue JSON-Datei erstellen oder eine bestehende Datei laden?",
+        "en": "Do you want to create a new JSON file or load an existing one?",
+        "es": "¿Quieres crear un archivo JSON nuevo o cargar uno existente?",
+        "fr": "Souhaitez-vous créer un nouveau fichier JSON ou en charger un existant ?",
+        "sq": "Dëshiron të krijosh një skedar të ri JSON apo të ngarkosh një ekzistues?",
+    },
+    "change_save.new_dialog_title": {
+        "de": "Neuen Speicherort für die JSON-Datei wählen",
+        "en": "Choose a new location for the JSON file",
+        "es": "Elige una nueva ubicación para el archivo JSON",
+        "fr": "Choisir un nouvel emplacement pour le fichier JSON",
+        "sq": "Zgjidh një vendndodhje të re për skedarin JSON",
+    },
+    "change_save.existing_dialog_title": {
+        "de": "Vorhandene JSON-Datei auswählen",
+        "en": "Select an existing JSON file",
+        "es": "Selecciona un archivo JSON existente",
+        "fr": "Sélectionner un fichier JSON existant",
+        "sq": "Zgjidh një skedar ekzistues JSON",
+    },
+    "change_save.no_change": {
+        "de": "Keine Änderung vorgenommen.",
+        "en": "No changes were made.",
+        "es": "No se realizaron cambios.",
+        "fr": "Aucun changement effectué.",
+        "sq": "Asnjë ndryshim nuk u bë.",
+    },
+}
+
+
+def translate_text(key: str, language: str, **kwargs) -> str:
+    values = TRANSLATIONS.get(key)
+    if not values:
+        return key
+    text = values.get(language) or values.get(DEFAULT_LANGUAGE) or next(iter(values.values()))
+    if kwargs:
+        try:
+            return text.format(**kwargs)
+        except (KeyError, ValueError):
+            return text
+    return text
+
 
 def ensure_save_path_initialized(root: tk.Misc | None = None) -> None:
     """Ensure SAVE_FILE is set, prompting the user for a directory on first run."""
@@ -83,17 +453,15 @@ def ensure_save_path_initialized(root: tk.Misc | None = None) -> None:
 
     config_exists = get_user_config_path().exists()
     env_override = os.environ.get("KLAUSURMASTER_SAVE_FILE")
+    language_code = load_user_language()
 
     # Offer a directory picker the very first time the config is created (installer-like flow).
     if not config_exists and env_override is None and root is not None:
         root.withdraw()
         root.update_idletasks()
         wants_custom = messagebox.askyesno(
-            "Speicherort wählen",
-            (
-                "Klausurmaster benötigt einen Speicherordner für Ihre Tabellen.\n\n"
-                "Möchten Sie jetzt einen Ordner wählen? Andernfalls wird der Standardordner im Benutzerverzeichnis verwendet."
-            ),
+            translate_text("save_prompt.title", language_code),
+            translate_text("save_prompt.body", language_code),
             parent=root,
         )
         if wants_custom:
@@ -103,7 +471,11 @@ def ensure_save_path_initialized(root: tk.Misc | None = None) -> None:
                 selected_path = os.path.join(directory, filename)
                 SAVE_FILE = persist_save_file_path(selected_path)
             else:
-                messagebox.showinfo("Standard verwendet", "Es wird der Standardordner verwendet.", parent=root)
+                messagebox.showinfo(
+                    translate_text("save_prompt.default_title", language_code),
+                    translate_text("save_prompt.default_body", language_code),
+                    parent=root,
+                )
         root.deiconify()
 
     if not SAVE_FILE:
@@ -117,6 +489,8 @@ class CardApp:
         self.root.title(f"{APP_NAME} {APP_VERSION}")
         self.root.geometry("1400x820")
         self.root.minsize(960, 640)
+        self.language = load_user_language()
+        self.language_var = tk.StringVar(master=self.root, value=self.language)
         self._icon_images: list[tk.PhotoImage] = []
         self._set_window_icon()
 
@@ -229,6 +603,25 @@ class CardApp:
                 self.build_navigation_tree()
                 self.update_table()
 
+    def tr(self, key: str, **kwargs) -> str:
+        return translate_text(key, self.language, **kwargs)
+
+    def change_language(self, language_code: str) -> None:
+        if language_code not in LANGUAGE_OPTIONS:
+            return
+        self.language = persist_user_language(language_code)
+        if self.language_var.get() != language_code:
+            self.language_var.set(language_code)
+        self.build_menu()
+        self.refresh_language_labels()
+        self.update_file_path_label()
+
+    def refresh_language_labels(self) -> None:
+        if hasattr(self, "toolbar_subtitle_label"):
+            self.toolbar_subtitle_label.config(text=self.tr("app.subtitle"))
+        if hasattr(self, "nav_title_label"):
+            self.nav_title_label.config(text=self.tr("nav.collections"))
+
     def _normalize_hex_color(self, value: str) -> str:
         candidate = (value or "").strip()
         if not candidate:
@@ -328,56 +721,103 @@ class CardApp:
         self.menubar = tk.Menu(self.root)
 
         file_menu = tk.Menu(self.menubar, tearoff=0)
-        file_menu.add_command(label="Speichern", command=self.save_data)
-        file_menu.add_command(label="Neu laden", command=self.load_data_or_create_new_table)
+        file_menu.add_command(label=self.tr("menu.file.save"), command=self.save_data)
+        file_menu.add_command(label=self.tr("menu.file.reload"), command=self.load_data_or_create_new_table)
         file_menu.add_separator()
-        file_menu.add_command(label="View state from…", command=self.view_history_state)
-        file_menu.add_command(label="Load state from…", command=self.load_history_state)
+        file_menu.add_command(label=self.tr("menu.file.view_state"), command=self.view_history_state)
+        file_menu.add_command(label=self.tr("menu.file.load_state"), command=self.load_history_state)
         file_menu.add_separator()
-        file_menu.add_command(label="Tabelle hinzufügen (Strg+N)", command=self.add_row)
-        file_menu.add_command(label="Tabelle löschen", command=self.delete_row)
+        file_menu.add_command(label=self.tr("menu.file.add_table"), command=self.add_row)
+        file_menu.add_command(label=self.tr("menu.file.delete_table"), command=self.delete_row)
         file_menu.add_separator()
-        file_menu.add_command(label="Karte hinzufügen (1–9)", command=self.add_card_via_button)
-        file_menu.add_command(label="Löschmodus umschalten (Strg+W)", command=self.toggle_delete_mode)
-        file_menu.add_command(label="Aktion abbrechen (Esc)", command=self.cancel_operations)
+        file_menu.add_command(label=self.tr("menu.file.add_card"), command=self.add_card_via_button)
+        file_menu.add_command(label=self.tr("menu.file.toggle_delete"), command=self.toggle_delete_mode)
+        file_menu.add_command(label=self.tr("menu.file.cancel_action"), command=self.cancel_operations)
         file_menu.add_separator()
-        file_menu.add_command(label="Speicherordner wählen…", command=self.choose_save_directory)
-        file_menu.add_command(label="Speicherdatei ändern…", command=self.change_save_location)
+        file_menu.add_command(label=self.tr("menu.file.choose_folder"), command=self.choose_save_directory)
+        file_menu.add_command(label=self.tr("menu.file.change_file"), command=self.change_save_location)
         file_menu.add_separator()
-        file_menu.add_command(label="Beenden", command=self.handle_exit_request)
+        file_menu.add_command(label=self.tr("menu.file.exit"), command=self.handle_exit_request)
 
         edit_menu = tk.Menu(self.menubar, tearoff=0)
-        edit_menu.add_command(label="Rückgängig (Strg+Z)", command=self.undo_action)
-        edit_menu.add_command(label="Wiederholen (Strg+Shift+Z)", command=self.redo_action)
+        edit_menu.add_command(label=self.tr("menu.edit.undo"), command=self.undo_action)
+        edit_menu.add_command(label=self.tr("menu.edit.redo"), command=self.redo_action)
 
         space_menu = tk.Menu(self.menubar, tearoff=0)
-        space_menu.add_command(label="Neuer Space (Strg+S)", command=self.new_table)
-        space_menu.add_command(label="Space laden…", command=self.load_table_via_menu)
+        space_menu.add_command(label=self.tr("menu.space.new"), command=self.new_table)
+        space_menu.add_command(label=self.tr("menu.space.load"), command=self.load_table_via_menu)
         space_menu.add_separator()
-        space_menu.add_command(label="Space importieren…", command=self.import_table_from_file)
-        space_menu.add_command(label="Space exportieren…", command=self.export_current_table)
-        space_menu.add_command(label="Karten importieren…", command=self.import_cards_via_text)
-        space_menu.add_command(label="Import", command=self.import_cards_via_text)
+        space_menu.add_command(label=self.tr("menu.space.import_space"), command=self.import_table_from_file)
+        space_menu.add_command(label=self.tr("menu.space.export_space"), command=self.export_current_table)
+        space_menu.add_command(label=self.tr("menu.space.import_cards"), command=self.import_cards_via_text)
+        space_menu.add_command(label=self.tr("menu.space.import_short"), command=self.import_cards_via_text)
         space_menu.add_separator()
-        space_menu.add_command(label="Space duplizieren…", command=self.duplicate_current_table)
-        space_menu.add_command(label="Tabelle verschieben/kopieren…", command=self.transfer_table_between_spaces)
-        space_menu.add_command(label="Space löschen…", command=self.delete_table_via_menu)
+        space_menu.add_command(label=self.tr("menu.space.duplicate"), command=self.duplicate_current_table)
+        space_menu.add_command(label=self.tr("menu.space.transfer"), command=self.transfer_table_between_spaces)
+        space_menu.add_command(label=self.tr("menu.space.delete"), command=self.delete_table_via_menu)
         space_menu.add_separator()
         theme_menu = tk.Menu(space_menu, tearoff=0)
-        theme_menu.add_command(label="Dunkel", command=lambda: self.apply_theme("dark"))
-        theme_menu.add_command(label="Beige", command=lambda: self.apply_theme("beige"))
+        theme_menu.add_command(label=self.tr("menu.space.theme.dark"), command=lambda: self.apply_theme("dark"))
+        theme_menu.add_command(label=self.tr("menu.space.theme.beige"), command=lambda: self.apply_theme("beige"))
         theme_menu.add_separator()
-        theme_menu.add_command(label="Eigenes Theme…", command=self.show_custom_theme_dialog)
-        space_menu.add_cascade(label="Theme", menu=theme_menu)
+        theme_menu.add_command(label=self.tr("menu.space.theme.custom"), command=self.show_custom_theme_dialog)
+        space_menu.add_cascade(label=self.tr("menu.space.theme"), menu=theme_menu)
 
         help_menu = tk.Menu(self.menubar, tearoff=0)
-        help_menu.add_command(label="Über", command=self.show_about_dialog)
+        help_menu.add_command(label=self.tr("menu.help.about"), command=self.show_about_dialog)
 
-        self.menubar.add_cascade(label="Datei", menu=file_menu)
-        self.menubar.add_cascade(label="Bearbeiten", menu=edit_menu)
-        self.menubar.add_cascade(label="Space", menu=space_menu)
-        self.menubar.add_cascade(label="Hilfe", menu=help_menu)
+        language_menu = tk.Menu(self.menubar, tearoff=0)
+        for code, label in LANGUAGE_OPTIONS.items():
+            language_menu.add_radiobutton(
+                label=label,
+                value=code,
+                variable=self.language_var,
+                command=lambda c=code: self.change_language(c),
+            )
+
+        actions_menu = tk.Menu(self.menubar, tearoff=0)
+        for action in self._get_actions_menu_items():
+            accelerator = action.get("accelerator") or ""
+            actions_menu.add_command(
+                label=self.tr(action["label_key"]),
+                accelerator=accelerator,
+                command=action["command"],
+            )
+
+        self.menubar.add_cascade(label=self.tr("menu.file"), menu=file_menu)
+        self.menubar.add_cascade(label=self.tr("menu.edit"), menu=edit_menu)
+        self.menubar.add_cascade(label=self.tr("menu.space"), menu=space_menu)
+        self.menubar.add_cascade(label=self.tr("menu.actions"), menu=actions_menu)
+        self.menubar.add_cascade(label=self.tr("menu.help"), menu=help_menu)
+        self.menubar.add_cascade(label=self.tr("menu.language"), menu=language_menu)
         self.root.config(menu=self.menubar)
+
+    def _get_actions_menu_items(self) -> list[dict[str, object]]:
+        return [
+            {"label_key": "menu.file.save", "command": self.save_data},
+            {"label_key": "menu.file.reload", "command": self.load_data_or_create_new_table},
+            {"label_key": "menu.file.view_state", "command": self.view_history_state},
+            {"label_key": "menu.file.load_state", "command": self.load_history_state},
+            {"label_key": "menu.file.add_table", "command": self.add_row, "accelerator": "Ctrl+N"},
+            {"label_key": "menu.file.delete_table", "command": self.delete_row},
+            {"label_key": "menu.file.add_card", "command": self.add_card_via_button, "accelerator": "1–9"},
+            {"label_key": "menu.file.toggle_delete", "command": self.toggle_delete_mode, "accelerator": "Ctrl+W"},
+            {"label_key": "action.toggle_mark_mode", "command": self.toggle_mark_mode, "accelerator": "Ctrl+M"},
+            {"label_key": "menu.file.cancel_action", "command": self.cancel_operations, "accelerator": "Esc"},
+            {"label_key": "menu.file.choose_folder", "command": self.choose_save_directory},
+            {"label_key": "menu.file.change_file", "command": self.change_save_location},
+            {"label_key": "menu.edit.undo", "command": self.undo_action, "accelerator": "Ctrl+Z"},
+            {"label_key": "menu.edit.redo", "command": self.redo_action, "accelerator": "Ctrl+Shift+Z / Ctrl+Y"},
+            {"label_key": "menu.space.new", "command": self.new_table, "accelerator": "Ctrl+S"},
+            {"label_key": "menu.space.load", "command": self.load_table_via_menu},
+            {"label_key": "menu.space.import_space", "command": self.import_table_from_file},
+            {"label_key": "menu.space.export_space", "command": self.export_current_table},
+            {"label_key": "menu.space.import_cards", "command": self.import_cards_via_text},
+            {"label_key": "menu.space.duplicate", "command": self.duplicate_current_table},
+            {"label_key": "menu.space.transfer", "command": self.transfer_table_between_spaces},
+            {"label_key": "menu.space.delete", "command": self.delete_table_via_menu},
+            {"label_key": "menu.help.about", "command": self.show_about_dialog},
+        ]
 
     def _build_toolbar(self):
         self.toolbar = ttk.Frame(self.main_frame, padding=(24, 16), style="Toolbar.TFrame")
@@ -386,15 +826,18 @@ class CardApp:
 
         title_wrapper = ttk.Frame(self.toolbar, style="Toolbar.TFrame")
         title_wrapper.grid(row=0, column=0, sticky=tk.W)
-        ttk.Label(title_wrapper, text="Karteisystem 2.0", style="Title.TLabel").pack(anchor=tk.W)
-        ttk.Label(title_wrapper, text="Wähle links Space und Tabelle, um Karten zu fokussieren.", style="Subtitle.TLabel").pack(anchor=tk.W)
+        self.toolbar_title_label = ttk.Label(title_wrapper, text=f"{APP_NAME} {APP_VERSION}", style="Title.TLabel")
+        self.toolbar_title_label.pack(anchor=tk.W)
+        self.toolbar_subtitle_label = ttk.Label(title_wrapper, text=self.tr("app.subtitle"), style="Subtitle.TLabel")
+        self.toolbar_subtitle_label.pack(anchor=tk.W)
 
     def _build_navigation(self):
         self.nav_frame = ttk.Frame(self.main_frame, padding=(24, 16, 12, 24), style="Nav.TFrame")
         self.nav_frame.grid(row=1, column=0, sticky=tk.NS)
         self.nav_frame.rowconfigure(1, weight=1)
 
-        ttk.Label(self.nav_frame, text="Sammlungen", style="Subtitle.TLabel").grid(row=0, column=0, sticky=tk.W, pady=(0, 6))
+        self.nav_title_label = ttk.Label(self.nav_frame, text=self.tr("nav.collections"), style="Subtitle.TLabel")
+        self.nav_title_label.grid(row=0, column=0, sticky=tk.W, pady=(0, 6))
 
         self.navigation_tree = ttk.Treeview(self.nav_frame, style="Navigation.Treeview", show="tree")
         self.navigation_tree.grid(row=1, column=0, sticky=tk.NS)
@@ -431,7 +874,7 @@ class CardApp:
 
     def update_file_path_label(self):
         global SAVE_FILE
-        self.file_path_label.config(text=f"Aktueller Speicherpfad: {SAVE_FILE}")
+        self.file_path_label.config(text=self.tr("status.current_path", path=SAVE_FILE))
 
     def _set_window_icon(self):
         icon_candidates = ["favicon.ico", "favicon.png"]
@@ -1800,8 +2243,8 @@ class CardApp:
         global SAVE_FILE
 
         user_choice = messagebox.askquestion(
-            "Speicheroption",
-            "Möchten Sie eine neue JSON-Datei erstellen oder eine bestehende Datei laden?",
+            self.tr("change_save.option_title"),
+            self.tr("change_save.option_question"),
             icon='question',
             default='yes',
         )
@@ -1810,7 +2253,7 @@ class CardApp:
             new_path = filedialog.asksaveasfilename(
                 defaultextension=".json",
                 filetypes=[("JSON files", "*.json")],
-                title="Neuen Speicherort für die JSON-Datei wählen",
+                title=self.tr("change_save.new_dialog_title"),
             )
             if new_path:
                 SAVE_FILE = persist_save_file_path(new_path)
@@ -1820,14 +2263,14 @@ class CardApp:
         elif user_choice == 'no':
             existing_path = filedialog.askopenfilename(
                 filetypes=[("JSON files", "*.json")],
-                title="Vorhandene JSON-Datei auswählen",
+                title=self.tr("change_save.existing_dialog_title"),
             )
             if existing_path:
                 SAVE_FILE = persist_save_file_path(existing_path)
                 print(f"Bestehende Datei geladen: {SAVE_FILE}")
                 self.load_data()
         else:
-            print("Keine Änderung vorgenommen.")
+            print(self.tr("change_save.no_change"))
 
         self.update_file_path_label()
         self.refresh_bin_history()
@@ -1842,7 +2285,10 @@ class CardApp:
         new_path = os.path.join(directory, filename)
         SAVE_FILE = persist_save_file_path(new_path)
         self.save_data()
-        messagebox.showinfo("Erfolg", f"Speicherpfad gesetzt auf:\n{SAVE_FILE}")
+        messagebox.showinfo(
+            self.tr("choose_directory.success_title"),
+            self.tr("choose_directory.success_body", path=SAVE_FILE),
+        )
         self.update_file_path_label()
         self.refresh_bin_history()
 
