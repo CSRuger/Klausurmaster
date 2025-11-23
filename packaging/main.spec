@@ -3,17 +3,19 @@
 from pathlib import Path
 
 
-project_dir = Path(__file__).resolve().parent
+spec_dir = Path(__file__).resolve().parent
+project_root = spec_dir.parent
+assets_dir = project_root / 'assets'
 resource_files = [
-    (str(project_dir / 'card_app_data.json'), '.'),
-    (str(project_dir / 'config.json'), '.'),
-    (str(project_dir / 'favicon.ico'), '.'),
+    (str(assets_dir / 'card_app_data.json'), 'assets'),
+    (str(assets_dir / 'config.json'), 'assets'),
+    (str(assets_dir / 'favicon.ico'), 'assets'),
 ]
 
 
 a = Analysis(
-    ['main.py'],
-    pathex=[],
+    [str(project_root / 'main.py')],
+    pathex=[str(project_root)],
     binaries=[],
     datas=resource_files,
     hiddenimports=[],
@@ -32,7 +34,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='main',
+    name='Klausurmaster',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -45,5 +47,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['favicon.ico'],
+    icon=[str(assets_dir / 'favicon.ico')],
 )

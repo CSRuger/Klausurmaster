@@ -12,10 +12,15 @@ APP_NAME = "Klausurmaster"
 APP_VERSION = "2.0.0"
 CONFIG_FILENAME = "config.json"
 DEFAULT_SAVE_FILENAME = "Tabellenspeicher_neu.json"
+ASSETS_DIRNAME = "assets"
 
 
 def _project_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def _assets_root() -> Path:
+    return _project_root() / ASSETS_DIRNAME
 
 
 def get_user_data_dir() -> Path:
@@ -46,7 +51,7 @@ def _load_config() -> dict[str, Any]:
         except (json.JSONDecodeError, OSError):
             pass
 
-    template_path = _project_root() / CONFIG_FILENAME
+    template_path = _assets_root() / CONFIG_FILENAME
     if template_path.exists():
         try:
             with template_path.open("r", encoding="utf-8") as handle:
@@ -104,7 +109,16 @@ def resource_path(relative_name: str) -> Path:
     candidate = base / relative_name
     if candidate.exists():
         return candidate
-    return _project_root() / relative_name
+
+    alt = base / ASSETS_DIRNAME / relative_name
+    if alt.exists():
+        return alt
+
+    project_candidate = _project_root() / relative_name
+    if project_candidate.exists():
+        return project_candidate
+
+    return _assets_root() / relative_name
 
 
 def project_root() -> Path:
