@@ -1,11 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+
+project_dir = Path(__file__).resolve().parent
+resource_files = [
+    (str(project_dir / 'card_app_data.json'), '.'),
+    (str(project_dir / 'config.json'), '.'),
+    (str(project_dir / 'favicon.ico'), '.'),
+]
+
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=resource_files,
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

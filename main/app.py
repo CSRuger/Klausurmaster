@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import sys
 from contextlib import contextmanager
 from datetime import datetime
 from tkinter import colorchooser, filedialog, messagebox, simpledialog, ttk
@@ -13,8 +14,17 @@ import tkinter as tk
 from cards import create_card, find_card, normalize_cards_tree
 from formula import calculate_ratio, calculate_expected_grade
 from table import generate_columns, interpolate_color, random_pastel_color
+from main.runtime_paths import (
+    APP_NAME,
+    APP_VERSION,
+    DEFAULT_SAVE_FILENAME,
+    get_user_config_path,
+    load_save_file_path,
+    persist_save_file_path,
+    resource_path,
+)
 
-SAVE_FILE = r"P:\\Sync\\Karteisystem\\Tabellenspeicher_neu.json"
+SAVE_FILE = ""
 BIN_HISTORY_FILENAME = "tabellenspeicher_bin.json"
 
 THEMES = {
@@ -65,14 +75,50 @@ TEXT_PRIMARY = THEMES["dark"]["TEXT_PRIMARY"]
 TEXT_MUTED = THEMES["dark"]["TEXT_MUTED"]
 
 
+def ensure_save_path_initialized(root: tk.Misc | None = None) -> None:
+    """Ensure SAVE_FILE is set, prompting the user for a directory on first run."""
+    global SAVE_FILE
+    if SAVE_FILE:
+        return
+
+    config_exists = get_user_config_path().exists()
+    env_override = os.environ.get("KLAUSURMASTER_SAVE_FILE")
+
+    # Offer a directory picker the very first time the config is created (installer-like flow).
+    if not config_exists and env_override is None and root is not None:
+        root.withdraw()
+        root.update_idletasks()
+        wants_custom = messagebox.askyesno(
+            "Speicherort wählen",
+            (
+                "Klausurmaster benötigt einen Speicherordner für Ihre Tabellen.\n\n"
+                "Möchten Sie jetzt einen Ordner wählen? Andernfalls wird der Standardordner im Benutzerverzeichnis verwendet."
+            ),
+            parent=root,
+        )
+        if wants_custom:
+            directory = filedialog.askdirectory(parent=root, title="Speicherordner wählen")
+            if directory:
+                filename = DEFAULT_SAVE_FILENAME
+                selected_path = os.path.join(directory, filename)
+                SAVE_FILE = persist_save_file_path(selected_path)
+            else:
+                messagebox.showinfo("Standard verwendet", "Es wird der Standardordner verwendet.", parent=root)
+        root.deiconify()
+
+    if not SAVE_FILE:
+        SAVE_FILE = str(load_save_file_path())
+
+
 class CardApp:
     def __init__(self, root: tk.Tk):
         # Initializes widgets, state, and loads persisted data.
         self.root = root
-        self.root.title("Klausurmaster2D")
+        self.root.title(f"{APP_NAME} {APP_VERSION}")
         self.root.geometry("1400x820")
         self.root.minsize(960, 640)
-        self.root.iconbitmap("favicon.ico")
+        self._icon_images: list[tk.PhotoImage] = []
+        self._set_window_icon()
 
         self.theme_name = "dark"
         self.data = {"tables": {}, "current_table": None}
@@ -104,6 +150,7 @@ class CardApp:
         self.configure_styles()
         self.build_main_layout()
         self.build_menu()
+        self.update_file_path_label()
 
         self.bin_history = self.load_binary_history()
         self.load_data_or_create_new_table()
@@ -385,6 +432,23 @@ class CardApp:
     def update_file_path_label(self):
         global SAVE_FILE
         self.file_path_label.config(text=f"Aktueller Speicherpfad: {SAVE_FILE}")
+
+    def _set_window_icon(self):
+        icon_candidates = ["favicon.ico", "favicon.png"]
+        for candidate in icon_candidates:
+            icon_path = resource_path(candidate)
+            if not icon_path.exists():
+                continue
+            try:
+                if candidate.lower().endswith(".ico") and sys.platform.startswith("win"):
+                    self.root.iconbitmap(str(icon_path))
+                    return
+                icon_image = tk.PhotoImage(file=str(icon_path))
+                self.root.iconphoto(True, icon_image)
+                self._icon_images.append(icon_image)
+                return
+            except tk.TclError:
+                continue
 
     def load_data_or_create_new_table(self):
         self.load_data()
@@ -1749,8 +1813,9 @@ class CardApp:
                 title="Neuen Speicherort für die JSON-Datei wählen",
             )
             if new_path:
-                SAVE_FILE = new_path
+                SAVE_FILE = persist_save_file_path(new_path)
                 print(f"Neuer Speicherort gesetzt: {SAVE_FILE}")
+                self.save_data()
 
         elif user_choice == 'no':
             existing_path = filedialog.askopenfilename(
@@ -1758,8 +1823,9 @@ class CardApp:
                 title="Vorhandene JSON-Datei auswählen",
             )
             if existing_path:
-                SAVE_FILE = existing_path
+                SAVE_FILE = persist_save_file_path(existing_path)
                 print(f"Bestehende Datei geladen: {SAVE_FILE}")
+                self.load_data()
         else:
             print("Keine Änderung vorgenommen.")
 
@@ -1773,9 +1839,11 @@ class CardApp:
             return
 
         filename = os.path.basename(SAVE_FILE) if SAVE_FILE else "Tabellenspeicher_neu.json"
-        SAVE_FILE = os.path.join(directory, filename)
+        new_path = os.path.join(directory, filename)
+        SAVE_FILE = persist_save_file_path(new_path)
         self.save_data()
         messagebox.showinfo("Erfolg", f"Speicherpfad gesetzt auf:\n{SAVE_FILE}")
+        self.update_file_path_label()
         self.refresh_bin_history()
 
     def prompt_table_choice(self, title: str, prompt: str) -> str | None:
@@ -2645,6 +2713,7 @@ class CardApp:
 
 def run_app():
     root = tk.Tk()
+    ensure_save_path_initialized(root)
     app = CardApp(root)
     root.after(100, app.load_data_or_create_new_table)
     root.mainloop()
