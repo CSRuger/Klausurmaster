@@ -32,20 +32,58 @@ Every tagged release publishes three artifacts under the repository's **Releases
 3. Run the AppImage from your file manager or terminal. Optional: move it into `~/Applications` for easier access.
 4. Select a save folder when prompted; the app will reuse it on every start.
 
-## Building from Source
+## Build & Package Yourself
 
-1. Install Python 3.11+ and ensure `pip` is available.
-2. Install dependencies (if a `requirements.txt` file is added) or run `python -m pip install -r requirements.txt` once available.
-3. Start the UI for local development:
-	```powershell
-	cd path\to\Karteisystem 2.0
-	python -m main
+The single PyInstaller spec in `packaging/main.spec` works on all three platforms. You must run the build natively on each OS to get a compatible binary.
+
+### Windows
+1. Install Python 3.11+ from python.org and run `py -m pip install --upgrade pip pyinstaller==6.11.1`.
+2. From the repo root run `pyinstaller packaging/main.spec`.
+3. The signed/installer-ready binary lives at `dist/Klausurmaster/Klausurmaster.exe`. Wrap it with Inno Setup/NSIS if you need an installation wizard.
+
+### macOS
+1. Use macOS 13+ with Xcode command-line tools installed: `xcode-select --install`.
+2. Create a virtual environment (`python3 -m venv .venv && source .venv/bin/activate`) and install PyInstaller (`pip install pyinstaller==6.11.1`).
+3. Run `pyinstaller packaging/main.spec`. The bundle appears at `dist/Klausurmaster/Klausurmaster`.
+4. (Optional) Convert to a DMG:
+	```bash
+	brew install create-dmg
+	create-dmg --overwrite --volname "Klausurmaster" \
+	  release/macos/Klausurmaster.dmg dist/Klausurmaster/Klausurmaster
 	```
-4. Build a distributable executable via PyInstaller:
-	```powershell
-	pyinstaller packaging/main.spec
+5. Codesign or notarize the app if you have an Apple Developer ID. Otherwise document the Gatekeeper bypass (already described above).
+
+### Linux
+1. Install Python 3.11+, Tk headers, and PyInstaller: `sudo apt install python3-tk && python3 -m pip install pyinstaller==6.11.1`.
+2. Run `pyinstaller packaging/main.spec` to produce `dist/Klausurmaster/Klausurmaster`.
+3. (Optional) Build an AppImage:
+	```bash
+	wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+	chmod +x appimagetool-x86_64.AppImage
+	# Prepare AppDir
+	mkdir -p release/linux/Klausurmaster.AppDir/usr/bin
+	cp dist/Klausurmaster/Klausurmaster release/linux/Klausurmaster.AppDir/usr/bin/
+	cp assets/favicon.ico release/linux/Klausurmaster.AppDir/Klausurmaster.png
+	cat > release/linux/Klausurmaster.AppDir/Klausurmaster.desktop <<'EOF'
+	[Desktop Entry]
+	Name=Klausurmaster
+	Exec=Klausurmaster
+	Icon=Klausurmaster
+	Type=Application
+	Categories=Education;
+	EOF
+	ARCH=x86_64 ./appimagetool-x86_64.AppImage \
+	  release/linux/Klausurmaster.AppDir release/linux/Klausurmaster-x.y.z.AppImage
+	chmod +x release/linux/Klausurmaster-x.y.z.AppImage
 	```
-	The resulting binaries live under `dist/`.
+
+## Release Checklist
+
+1. Build fresh installers on Windows (`.exe`), macOS (`.dmg` or zipped `.app`), and Linux (`.AppImage` or raw binary) using the steps above.
+2. Rename artifacts consistently, e.g. `Klausurmaster-Windows-x.y.z.exe`, `Klausurmaster-macOS-x.y.z.dmg`, `Klausurmaster-Linux-x.y.z.AppImage`.
+3. Tag the commit: `git tag -a vX.Y.Z -m "Release vX.Y.Z" && git push origin main --tags`.
+4. Draft a GitHub release for that tag, attach all platform binaries, and include highlights/changelog plus SHA256 checksums if available.
+5. Update this README (and optionally `docs/stand-19.12.txt`) if installation behavior or requirements change.
 
 ## Support
 
