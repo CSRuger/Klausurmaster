@@ -3,7 +3,10 @@
 from pathlib import Path
 
 
-spec_dir = Path(__file__).resolve().parent
+if '__file__' in globals():
+    spec_dir = Path(__file__).resolve().parent
+else:
+    spec_dir = Path.cwd() / 'packaging'
 project_root = spec_dir.parent
 assets_dir = project_root / 'assets'
 resource_files = [

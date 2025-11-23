@@ -1,0 +1,28 @@
+# Build artifacts
+build/
+dist/
+*.spec
+*.log
+*.toc
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# PyInstaller temporary files
+*.manifest
+*.pkg
+*.exe.manifest
+
+# IDE settings
+.vscode/
+.idea/
