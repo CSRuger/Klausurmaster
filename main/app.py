@@ -14,21 +14,24 @@ import tkinter as tk
 from cards import create_card, find_card, normalize_cards_tree
 from formula import calculate_ratio, calculate_expected_grade
 from table import generate_columns, interpolate_color, random_pastel_color
+from main import updater
 from main.runtime_paths import (
     APP_NAME,
     APP_VERSION,
+    BIN_HISTORY_FILENAME,
     DEFAULT_LANGUAGE,
     DEFAULT_SAVE_FILENAME,
     get_user_config_path,
+    load_bin_history_file_path,
     load_save_file_path,
     load_user_language,
+    persist_bin_history_file_path,
     persist_save_file_path,
     persist_user_language,
     resource_path,
 )
 
 SAVE_FILE = ""
-BIN_HISTORY_FILENAME = "tabellenspeicher_bin.json"
 
 THEMES = {
     "dark": {
@@ -331,6 +334,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "fr": "Thème personnalisé…",
         "sq": "Temë e personalizuar…",
     },
+    "menu.help.check_updates": {
+        "de": "Auf Updates prüfen…",
+        "en": "Check for updates…",
+        "es": "Buscar actualizaciones…",
+        "fr": "Rechercher des mises à jour…",
+        "sq": "Kontrollo për përditësime…",
+    },
     "menu.help.about": {
         "de": "Über",
         "en": "About",
@@ -372,6 +382,69 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "es": "Se usará la carpeta predeterminada.",
         "fr": "Le dossier par défaut sera utilisé.",
         "sq": "Do të përdoret dosja e parazgjedhur.",
+    },
+    "save_prompt.option_custom": {
+        "de": "Eigenen Ordner wählen",
+        "en": "Choose custom folder",
+        "es": "Elegir carpeta personalizada",
+        "fr": "Choisir un dossier personnalisé",
+        "sq": "Zgjidh dosje të personalizuar",
+    },
+    "save_prompt.option_default": {
+        "de": "Standard verwenden",
+        "en": "Use default",
+        "es": "Usar predeterminado",
+        "fr": "Utiliser par défaut",
+        "sq": "Përdor parazgjedhjen",
+    },
+    "save_prompt.option_existing": {
+        "de": "Bestehende Daten suchen",
+        "en": "Locate existing data",
+        "es": "Buscar datos existentes",
+        "fr": "Rechercher des données existantes",
+        "sq": "Gjej të dhëna ekzistuese",
+    },
+    "save_prompt.locate_save_title": {
+        "de": "Tabellenspeicher-Datei auswählen",
+        "en": "Select table storage file",
+        "es": "Selecciona el archivo de tablas",
+        "fr": "Sélectionner le fichier des tableaux",
+        "sq": "Zgjidh skedarin e tabelave",
+    },
+    "save_prompt.locate_bin_title": {
+        "de": "Versionshistorie-Datei auswählen",
+        "en": "Select history file",
+        "es": "Selecciona el archivo de historial",
+        "fr": "Sélectionner le fichier d'historique",
+        "sq": "Zgjidh skedarin e historikut",
+    },
+    "save_prompt.existing_cancelled_title": {
+        "de": "Suche abgebrochen",
+        "en": "Search canceled",
+        "es": "Búsqueda cancelada",
+        "fr": "Recherche annulée",
+        "sq": "Kërkimi u anulua",
+    },
+    "save_prompt.existing_cancelled_body": {
+        "de": "Es wurden keine Dateien gewählt. Der Standardordner wird verwendet.",
+        "en": "No files were selected. The default folder will be used.",
+        "es": "No se seleccionaron archivos. Se usará la carpeta predeterminada.",
+        "fr": "Aucun fichier sélectionné. Le dossier par défaut sera utilisé.",
+        "sq": "Nuk u zgjodhën skedarë. Do të përdoret dosja e parazgjedhur.",
+    },
+    "save_prompt.existing_success_title": {
+        "de": "Daten gefunden",
+        "en": "Data linked",
+        "es": "Datos vinculados",
+        "fr": "Données liées",
+        "sq": "Të dhënat u lidhën",
+    },
+    "save_prompt.existing_success_body": {
+        "de": "Tabellen: {save}\nHistorie: {bin}",
+        "en": "Tables: {save}\nHistory: {bin}",
+        "es": "Tablas: {save}\nHistorial: {bin}",
+        "fr": "Tables : {save}\nHistorique : {bin}",
+        "sq": "Tabela: {save}\nHistoria: {bin}",
     },
     "status.current_path": {
         "de": "Aktueller Speicherpfad: {path}",
@@ -429,6 +502,76 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "fr": "Aucun changement effectué.",
         "sq": "Asnjë ndryshim nuk u bë.",
     },
+    "update.available.title": {
+        "de": "Update verfügbar",
+        "en": "Update available",
+        "es": "Actualización disponible",
+        "fr": "Mise à jour disponible",
+        "sq": "Përditësim i disponueshëm",
+    },
+    "update.available.body": {
+        "de": "Version {version} ist verfügbar. Installer herunterladen und starten? Deine gespeicherten Tabellen bleiben erhalten.\n\nHinweise:\n{notes}",
+        "en": "Version {version} is available. Download and launch the installer? Your saved tables stay untouched.\n\nNotes:\n{notes}",
+        "es": "La versión {version} está disponible. ¿Descargar e iniciar el instalador? Tus tablas guardadas no se tocan.\n\nNotas:\n{notes}",
+        "fr": "La version {version} est disponible. Télécharger et lancer l'installateur ? Vos tableaux enregistrés restent inchangés.\n\nNotes :\n{notes}",
+        "sq": "Versioni {version} është gati. Ta shkarkoj dhe nis instaluesin? Tabelat e ruajtura mbeten të paprekura.\n\nShënime:\n{notes}",
+    },
+    "update.no_notes": {
+        "de": "Keine zusätzlichen Hinweise.",
+        "en": "No additional notes.",
+        "es": "Sin notas adicionales.",
+        "fr": "Aucune note supplémentaire.",
+        "sq": "Pa shënime shtesë.",
+    },
+    "update.asset.missing": {
+        "de": "Für dieses Betriebssystem wurde kein Installationspaket gefunden.",
+        "en": "No installer asset was found for this operating system.",
+        "es": "No se encontró un instalador para este sistema operativo.",
+        "fr": "Aucun installateur n'a été trouvé pour ce système.",
+        "sq": "Nuk u gjet instalues për këtë sistem.",
+    },
+    "update.up_to_date": {
+        "de": "Sie verwenden bereits Version {version}.",
+        "en": "You're already running version {version}.",
+        "es": "Ya usas la versión {version}.",
+        "fr": "Vous utilisez déjà la version {version}.",
+        "sq": "Po përdor tashmë versionin {version}.",
+    },
+    "update.error.title": {
+        "de": "Update fehlgeschlagen",
+        "en": "Update failed",
+        "es": "Actualización fallida",
+        "fr": "Échec de la mise à jour",
+        "sq": "Përditësimi dështoi",
+    },
+    "update.error.generic": {
+        "de": "Fehler: {error}",
+        "en": "Error: {error}",
+        "es": "Error: {error}",
+        "fr": "Erreur : {error}",
+        "sq": "Gabim: {error}",
+    },
+    "update.error.no_version": {
+        "de": "Im Release wurde keine Version gefunden.",
+        "en": "No version value was found in the release metadata.",
+        "es": "No se encontró ninguna versión en los metadatos de la publicación.",
+        "fr": "Aucune version n'a été trouvée dans la publication.",
+        "sq": "Nuk u gjet version në publikim.",
+    },
+    "update.download.success.title": {
+        "de": "Installer bereit",
+        "en": "Installer ready",
+        "es": "Instalador listo",
+        "fr": "Programme d'installation prêt",
+        "sq": "Instaluesi gati",
+    },
+    "update.download.success.body": {
+        "de": "Der Installer befindet sich unter:\n{path}\nEr startet jetzt; schließe die App danach, damit die Installation abschließen kann.",
+        "en": "The installer was saved to:\n{path}\nIt will launch now; close the app afterward to let it finish.",
+        "es": "El instalador se guardó en:\n{path}\nSe iniciará ahora; cierra la app después para completar la instalación.",
+        "fr": "L'installateur a été enregistré ici :\n{path}\nIl va se lancer maintenant ; fermez l'app ensuite pour terminer.",
+        "sq": "Instaluesi u ruajt te:\n{path}\nDo të niset tani; mbylle aplikacionin më pas që të përfundojë.",
+    },
 }
 
 
@@ -445,6 +588,69 @@ def translate_text(key: str, language: str, **kwargs) -> str:
     return text
 
 
+def _show_initial_save_choice_dialog(root: tk.Misc, language_code: str) -> str:
+    dialog = tk.Toplevel(root)
+    dialog.title(translate_text("save_prompt.title", language_code))
+    dialog.transient(root)
+    dialog.grab_set()
+    dialog.resizable(False, False)
+
+    ttk.Label(
+        dialog,
+        text=translate_text("save_prompt.body", language_code),
+        wraplength=360,
+        justify="left",
+    ).pack(padx=20, pady=(20, 12))
+
+    result = {"choice": "default"}
+
+    def _set_choice(choice: str):
+        result["choice"] = choice
+        dialog.destroy()
+
+    button_kwargs = {"fill": tk.X, "padx": 20, "pady": 4}
+    ttk.Button(
+        dialog,
+        text=translate_text("save_prompt.option_custom", language_code),
+        command=lambda: _set_choice("custom"),
+    ).pack(**button_kwargs)
+    ttk.Button(
+        dialog,
+        text=translate_text("save_prompt.option_existing", language_code),
+        command=lambda: _set_choice("existing"),
+    ).pack(**button_kwargs)
+    ttk.Button(
+        dialog,
+        text=translate_text("save_prompt.option_default", language_code),
+        command=lambda: _set_choice("default"),
+    ).pack(**button_kwargs)
+
+    dialog.protocol("WM_DELETE_WINDOW", lambda: _set_choice("default"))
+    dialog.wait_window()
+    return result["choice"]
+
+
+def _locate_existing_save_files(root: tk.Misc, language_code: str) -> tuple[str, str] | None:
+    save_path = filedialog.askopenfilename(
+        parent=root,
+        title=translate_text("save_prompt.locate_save_title", language_code),
+        filetypes=[("JSON", "*.json"), ("Alle Dateien", "*.*")],
+    )
+    if not save_path:
+        return None
+
+    initial_dir = os.path.dirname(save_path) or None
+    bin_path = filedialog.askopenfilename(
+        parent=root,
+        title=translate_text("save_prompt.locate_bin_title", language_code),
+        initialdir=initial_dir,
+        filetypes=[("JSON", "*.json"), ("Alle Dateien", "*.*")],
+    )
+    if not bin_path:
+        return None
+    return save_path, bin_path
+
+
 def ensure_save_path_initialized(root: tk.Misc | None = None) -> None:
     """Ensure SAVE_FILE is set, prompting the user for a directory on first run."""
     global SAVE_FILE
@@ -459,23 +665,49 @@ def ensure_save_path_initialized(root: tk.Misc | None = None) -> None:
     if not config_exists and env_override is None and root is not None:
         root.withdraw()
         root.update_idletasks()
-        wants_custom = messagebox.askyesno(
-            translate_text("save_prompt.title", language_code),
-            translate_text("save_prompt.body", language_code),
-            parent=root,
-        )
-        if wants_custom:
+        choice = _show_initial_save_choice_dialog(root, language_code)
+        if choice == "custom":
             directory = filedialog.askdirectory(parent=root, title="Speicherordner wählen")
             if directory:
                 filename = DEFAULT_SAVE_FILENAME
                 selected_path = os.path.join(directory, filename)
                 SAVE_FILE = persist_save_file_path(selected_path)
+                messagebox.showinfo(
+                    translate_text("choose_directory.success_title", language_code),
+                    translate_text("choose_directory.success_body", language_code, path=selected_path),
+                    parent=root,
+                )
             else:
                 messagebox.showinfo(
                     translate_text("save_prompt.default_title", language_code),
                     translate_text("save_prompt.default_body", language_code),
                     parent=root,
                 )
+        elif choice == "existing":
+            located = _locate_existing_save_files(root, language_code)
+            if located:
+                save_path, bin_path = located
+                SAVE_FILE = persist_save_file_path(save_path)
+                persist_bin_history_file_path(bin_path)
+                safe_save = save_path.replace("{", "{{").replace("}", "}}")
+                safe_bin = bin_path.replace("{", "{{").replace("}", "}}")
+                messagebox.showinfo(
+                    translate_text("save_prompt.existing_success_title", language_code),
+                    translate_text("save_prompt.existing_success_body", language_code, save=safe_save, bin=safe_bin),
+                    parent=root,
+                )
+            else:
+                messagebox.showinfo(
+                    translate_text("save_prompt.existing_cancelled_title", language_code),
+                    translate_text("save_prompt.existing_cancelled_body", language_code),
+                    parent=root,
+                )
+        else:
+            messagebox.showinfo(
+                translate_text("save_prompt.default_title", language_code),
+                translate_text("save_prompt.default_body", language_code),
+                parent=root,
+            )
         root.deiconify()
 
     if not SAVE_FILE:
@@ -724,18 +956,18 @@ class CardApp:
         file_menu.add_command(label=self.tr("menu.file.save"), command=self.save_data)
         file_menu.add_command(label=self.tr("menu.file.reload"), command=self.load_data_or_create_new_table)
         file_menu.add_separator()
-        file_menu.add_command(label=self.tr("menu.file.view_state"), command=self.view_history_state)
-        file_menu.add_command(label=self.tr("menu.file.load_state"), command=self.load_history_state)
+        file_menu.add_command(label=self.tr("menu.space.new"), command=self.new_table)
+        file_menu.add_command(label=self.tr("menu.space.load"), command=self.load_table_via_menu)
         file_menu.add_separator()
-        file_menu.add_command(label=self.tr("menu.file.add_table"), command=self.add_row)
-        file_menu.add_command(label=self.tr("menu.file.delete_table"), command=self.delete_row)
-        file_menu.add_separator()
-        file_menu.add_command(label=self.tr("menu.file.add_card"), command=self.add_card_via_button)
-        file_menu.add_command(label=self.tr("menu.file.toggle_delete"), command=self.toggle_delete_mode)
-        file_menu.add_command(label=self.tr("menu.file.cancel_action"), command=self.cancel_operations)
+        file_menu.add_command(label=self.tr("menu.space.import_space"), command=self.import_table_from_file)
+        file_menu.add_command(label=self.tr("menu.space.export_space"), command=self.export_current_table)
+        file_menu.add_command(label=self.tr("menu.space.import_cards"), command=self.import_cards_via_text)
         file_menu.add_separator()
         file_menu.add_command(label=self.tr("menu.file.choose_folder"), command=self.choose_save_directory)
         file_menu.add_command(label=self.tr("menu.file.change_file"), command=self.change_save_location)
+        file_menu.add_separator()
+        file_menu.add_command(label=self.tr("menu.file.view_state"), command=self.view_history_state)
+        file_menu.add_command(label=self.tr("menu.file.load_state"), command=self.load_history_state)
         file_menu.add_separator()
         file_menu.add_command(label=self.tr("menu.file.exit"), command=self.handle_exit_request)
 
@@ -744,13 +976,12 @@ class CardApp:
         edit_menu.add_command(label=self.tr("menu.edit.redo"), command=self.redo_action)
 
         space_menu = tk.Menu(self.menubar, tearoff=0)
-        space_menu.add_command(label=self.tr("menu.space.new"), command=self.new_table)
-        space_menu.add_command(label=self.tr("menu.space.load"), command=self.load_table_via_menu)
-        space_menu.add_separator()
-        space_menu.add_command(label=self.tr("menu.space.import_space"), command=self.import_table_from_file)
-        space_menu.add_command(label=self.tr("menu.space.export_space"), command=self.export_current_table)
-        space_menu.add_command(label=self.tr("menu.space.import_cards"), command=self.import_cards_via_text)
-        space_menu.add_command(label=self.tr("menu.space.import_short"), command=self.import_cards_via_text)
+        space_menu.add_command(label=self.tr("menu.file.add_table"), command=self.add_row, accelerator="Ctrl+N")
+        space_menu.add_command(label=self.tr("menu.file.delete_table"), command=self.delete_row)
+        space_menu.add_command(label=self.tr("menu.file.add_card"), command=self.add_card_via_button)
+        space_menu.add_command(label=self.tr("menu.file.toggle_delete"), command=self.toggle_delete_mode, accelerator="Ctrl+W")
+        space_menu.add_command(label=self.tr("action.toggle_mark_mode"), command=self.toggle_mark_mode, accelerator="Ctrl+M")
+        space_menu.add_command(label=self.tr("menu.file.cancel_action"), command=self.cancel_operations, accelerator="Esc")
         space_menu.add_separator()
         space_menu.add_command(label=self.tr("menu.space.duplicate"), command=self.duplicate_current_table)
         space_menu.add_command(label=self.tr("menu.space.transfer"), command=self.transfer_table_between_spaces)
@@ -764,6 +995,8 @@ class CardApp:
         space_menu.add_cascade(label=self.tr("menu.space.theme"), menu=theme_menu)
 
         help_menu = tk.Menu(self.menubar, tearoff=0)
+        help_menu.add_command(label=self.tr("menu.help.check_updates"), command=self.check_for_updates)
+        help_menu.add_separator()
         help_menu.add_command(label=self.tr("menu.help.about"), command=self.show_about_dialog)
 
         language_menu = tk.Menu(self.menubar, tearoff=0)
@@ -816,6 +1049,7 @@ class CardApp:
             {"label_key": "menu.space.duplicate", "command": self.duplicate_current_table},
             {"label_key": "menu.space.transfer", "command": self.transfer_table_between_spaces},
             {"label_key": "menu.space.delete", "command": self.delete_table_via_menu},
+            {"label_key": "menu.help.check_updates", "command": self.check_for_updates},
             {"label_key": "menu.help.about", "command": self.show_about_dialog},
         ]
 
@@ -1023,10 +1257,8 @@ class CardApp:
         return "break"
 
     def get_bin_file_path(self) -> str:
-        directory = os.path.dirname(SAVE_FILE)
-        if not directory:
-            directory = "."
-        return os.path.join(directory, BIN_HISTORY_FILENAME)
+        path = load_bin_history_file_path(SAVE_FILE or None)
+        return str(path)
 
     def load_binary_history(self) -> list[dict]:
         path = self.get_bin_file_path()
@@ -2422,10 +2654,6 @@ class CardApp:
             if src_data and dest_data:
                 if src_data["columns"] == dest_data["columns"]:
                     details.append(f"Spalten kompatibel ({len(src_data['columns'])})")
-                else:
-                    details.append("Warnung: Spalten unterscheiden sich")
-                details.append(f"Zieltabelle: {len(dest_data['rows'])}/9 belegt")
-            info_var.set(" · ".join(details))
 
         def sync_name_with_selection(*_args):
             if not name_var.get():
@@ -2774,6 +3002,89 @@ class CardApp:
         self.build_navigation_tree()
         self.update_table()
         messagebox.showinfo("Erfolg", f"Space '{current_table}' wurde als '{new_name}' kopiert.")
+
+    def check_for_updates(self):
+        with self.smooth_state_transition():
+            try:
+                release = updater.fetch_latest_release()
+            except updater.UpdateError as exc:
+                error_text = str(exc).replace("{", "{{").replace("}", "}}")
+                messagebox.showerror(
+                    self.tr("update.error.title"),
+                    self.tr("update.error.generic", error=error_text),
+                )
+                return
+
+        latest_version = (release.get("tag_name") or release.get("name") or "").strip()
+        if not latest_version:
+            messagebox.showerror(
+                self.tr("update.error.title"),
+                self.tr("update.error.no_version"),
+            )
+            return
+
+        safe_latest_version = latest_version.replace("{", "{{").replace("}", "}}")
+        running_version = str(APP_VERSION)
+        safe_running_version = running_version.replace("{", "{{").replace("}", "}}")
+
+        if not updater.is_newer_version(APP_VERSION, latest_version):
+            messagebox.showinfo(
+                self.tr("menu.help.check_updates"),
+                self.tr("update.up_to_date", version=safe_running_version),
+            )
+            return
+
+        asset = updater.select_best_asset(release)
+        if not asset:
+            messagebox.showwarning(
+                self.tr("update.error.title"),
+                self.tr("update.asset.missing"),
+            )
+            return
+
+        notes_raw = (release.get("body") or "").strip()
+        if notes_raw:
+            lines = [line.strip() for line in notes_raw.splitlines() if line.strip()]
+            preview_lines = lines[:5]
+            note_preview = "\n".join(preview_lines)
+            if len(lines) > 5:
+                note_preview += "\n…"
+        else:
+            note_preview = self.tr("update.no_notes")
+        safe_notes = note_preview.replace("{", "{{").replace("}", "}}")
+
+        should_download = messagebox.askyesno(
+            self.tr("update.available.title"),
+            self.tr("update.available.body", version=safe_latest_version, notes=safe_notes),
+        )
+        if not should_download:
+            return
+
+        with self.smooth_state_transition():
+            try:
+                installer_path = updater.download_asset(asset)
+            except updater.UpdateError as exc:
+                error_text = str(exc).replace("{", "{{").replace("}", "}}")
+                messagebox.showerror(
+                    self.tr("update.error.title"),
+                    self.tr("update.error.generic", error=error_text),
+                )
+                return
+
+        path_text = str(installer_path).replace("{", "{{").replace("}", "}}")
+        messagebox.showinfo(
+            self.tr("update.download.success.title"),
+            self.tr("update.download.success.body", path=path_text),
+        )
+
+        try:
+            updater.launch_installer(installer_path)
+        except Exception as exc:  # pragma: no cover - platform dependent
+            error_text = str(exc).replace("{", "{{").replace("}", "}}")
+            messagebox.showerror(
+                self.tr("update.error.title"),
+                self.tr("update.error.generic", error=error_text),
+            )
 
     def show_about_dialog(self):
         messagebox.showinfo(

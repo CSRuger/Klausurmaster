@@ -1,4 +1,4 @@
-# Klausurmaster 2.0
+# Klausurmaster
 
 Klausurmaster is a cross-platform Tkinter application for organizing study cards, grade tables, and ratios. The app now ships with platform-specific installers and keeps all runtime assets in a predictable structure.
 

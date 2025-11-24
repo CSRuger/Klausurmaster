@@ -9,9 +9,10 @@ from pathlib import Path
 from typing import Any
 
 APP_NAME = "Klausurmaster"
-APP_VERSION = "2.0.0"
+APP_VERSION = "0.69"
 CONFIG_FILENAME = "config.json"
 DEFAULT_SAVE_FILENAME = "Tabellenspeicher_neu.json"
+BIN_HISTORY_FILENAME = "tabellenspeicher_bin.json"
 ASSETS_DIRNAME = "assets"
 DEFAULT_LANGUAGE = "de"
 
@@ -100,6 +101,45 @@ def persist_save_file_path(new_path: str | Path) -> str:
     path_obj.parent.mkdir(parents=True, exist_ok=True)
     config = _load_config()
     config["save_file"] = str(path_obj)
+    _persist_config(config)
+    return str(path_obj)
+
+
+def load_bin_history_file_path(save_file_hint: str | Path | None = None) -> Path:
+    """Return the path of the binary history storage file, honoring overrides."""
+    env_override = os.environ.get("KLAUSURMASTER_BIN_FILE")
+    config = _load_config()
+
+    def _resolve(candidate: str | Path) -> Path:
+        path_obj = Path(candidate).expanduser()
+        if not path_obj.is_absolute():
+            path_obj = get_user_data_dir() / path_obj
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        return path_obj
+
+    if env_override:
+        return _resolve(env_override)
+
+    stored_value = config.get("bin_history_file")
+    if stored_value:
+        return _resolve(stored_value)
+
+    if save_file_hint is None:
+        save_file_hint = load_save_file_path()
+    base = Path(save_file_hint)
+    if not base.is_absolute():
+        base = get_user_data_dir() / base
+    return _resolve(base.with_name(BIN_HISTORY_FILENAME))
+
+
+def persist_bin_history_file_path(new_path: str | Path) -> str:
+    """Persist a custom binary history file path and return it as a string."""
+    path_obj = Path(new_path).expanduser()
+    if not path_obj.is_absolute():
+        path_obj = get_user_data_dir() / path_obj
+    path_obj.parent.mkdir(parents=True, exist_ok=True)
+    config = _load_config()
+    config["bin_history_file"] = str(path_obj)
     _persist_config(config)
     return str(path_obj)
 
